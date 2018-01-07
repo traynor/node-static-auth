@@ -1,0 +1,50 @@
+# EditorConfig is awesome: http://EditorConfig.org
+# mix by: https://github.com/editorconfig/editorconfig/wiki/Projects-Using-EditorConfig
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+# editorconfig-tools is unable to ignore long strings or urls
+max_line_length = null
+trim_trailing_whitespace = true
+
+# javscript [{lib,src,test}/**.js]
+[{lib,src,test}/**.js]
+indent_style = space
+indent_size = 2
+
+# Use 2 spaces for the HTML files
+[*.html]
+indent_size = 2
+
+# CSS-Files
+[*.css]
+indent_style = tab
+indent_size = 4
+
+# Don't perform any clean-up on thirdparty files
+[**/vendor/**]
+indent_style = ignore
+indent_size = ignore
+trim_trailing_whitespace = false
+insert_final_newline = false
+end_of_line = ignore
+charset = ignore
+
+# Minified JavaScript files shouldn't be changed
+[**.min.js]
+indent_style = ignore
+insert_final_newline = ignore
+
+# Makefiles always use tabs for indentation
+[Makefile]
+indent_style = tab
+
+[package.json]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
