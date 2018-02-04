@@ -24,9 +24,8 @@ gulp.task('compile', ['lint'], function() {
     var stream = gulp.src(src) // your ES2015 code
         .pipe(sourcemaps.init())
         //.pipe(cache.filter()) // remember files
-        .pipe(babel({
-                    "presets": ["es2015"]
-                })) // compile new ones
+        // leave out presets here, breaks `add-module-exports` plugin
+        .pipe(babel()) // compile new ones
         .pipe(sourcemaps.write('.', {
             includeContent: false,
             sourceRoot: '../src'
