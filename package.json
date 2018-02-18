@@ -14,6 +14,7 @@
     "babel-eslint": "^8.1.2",
     "babel-plugin-add-module-exports": "^0.2.1",
     "babel-preset-env": "^1.6.1",
+    "browser-sync": "^2.23.6",
     "gulp": "^3.9.1",
     "gulp-babel": "^7.0.0",
     "gulp-eslint": "^4.0.1",
@@ -21,7 +22,8 @@
     "gulp-mocha": "^5.0.0",
     "gulp-nodemon": "^2.2.1",
     "gulp-sourcemaps": "^2.6.3",
-    "gulp-supervisor": "^0.1.2"
+    "gulp-supervisor": "^0.1.2",
+    "superagent": "^3.8.2"
   },
   "dependencies": {
     "basic-auth": "^2.0.0",

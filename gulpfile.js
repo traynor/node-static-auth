@@ -6,6 +6,7 @@ const eslint = require('gulp-eslint');
 const Cache = require('gulp-file-cache');
 const mocha = require('gulp-mocha');
 const sourcemaps = require('gulp-sourcemaps');
+const browserSync = require('browser-sync').create();
 
 var cache = new Cache();
 
@@ -13,7 +14,7 @@ const src = './src/**/*.js';
 const dest = 'lib';
 const test = 'example';
 
-gulp.task('lint', function(){
+gulp.task('lint', function() {
     return gulp.src([src, test])
         .pipe(eslint())
         .pipe(eslint.format());
@@ -36,23 +37,27 @@ gulp.task('compile', ['lint'], function() {
 });
 
 gulp.task('test', ['compile'], function() {
-    var stream = gulp.src([dest])
+    const stream = gulp.src([dest])
         .pipe(mocha({
-            reporter: 'list'
+            reporter: 'list',
+            // prevent from hanging on callback
+            exit: true
         }))
         .once('error', (err) => {
             process.exit(1);
         })
-        //.once('end', () => {
-        //    process.exit();
-        //});
-    return stream
+        .once('end', () => {
+            //process.exit();
+        });
+    return stream;
 });
 
-gulp.task('watch', ['test'], function() {
+gulp.task('server', ['test'], function() {
+
     var stream = nodemon({
             script: 'example/server', // run ES5 code
-            watch: ['src', 'test'], // watch ES2015 code
+            ext: 'js, html',
+            watch: ['src', 'test', 'example'], // watch ES2015 code
             tasks: ['test'] // compile synchronously onChange
         })
         .on('restart', function() {
@@ -64,6 +69,10 @@ gulp.task('watch', ['test'], function() {
             /* eslint-disable no-console */
             console.log('nodemon started');
             /* eslint-enable no-console */
+
+            // use start event to reload browsers
+            // also: "browser-sync" only works when there is the tag "body"
+            browserSync.reload();
         })
         .on('crash', function() {
             /* eslint-disable no-console */
@@ -75,5 +84,18 @@ gulp.task('watch', ['test'], function() {
 
     return stream;
 })
+// todo: https redirect
+gulp.task('browser-sync', ['server'], function() {
+    browserSync.init({
+        port: 3003,
+        // todo: const
+        proxy: "localhost:3001",
+        //browser: 'firefox',
+        ui: {
+            port: 8080
+        },
+        reloadDelay: 1000
+    });
+});
 
-gulp.task('default', ['watch']);
+gulp.task('default', ['browser-sync']);
