@@ -31,3 +31,4 @@ coverage/
 dist
 temp
 example/**/*.log
+*.sublime*
