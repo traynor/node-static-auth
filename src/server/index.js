@@ -101,6 +101,7 @@ var NodeStatic = function(config, cb=null) {
 
     })
   }
+
   //let svr;
   sslOpts
     ? server = https.createServer(sslOpts, listener) : server = http.createServer(listener);

@@ -89,7 +89,7 @@ gulp.task('browser-sync', ['server'], function() {
     browserSync.init({
         port: 3003,
         // todo: const
-        proxy: "localhost:3001",
+        proxy: "https://localhost:3001",
         //browser: 'firefox',
         ui: {
             port: 8080

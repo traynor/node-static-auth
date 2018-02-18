@@ -14,10 +14,16 @@ const config = {
     server: {
         port: 3001,
         ssl: {
-            enabled: false,
-            // enter path relative to this script
-            key: 'example/server/server.key',//example/server/server.key',
-            cert: 'example/server/server.crt'//example/server/server.crt'
+            enabled: true,
+            httpListener: 3000,
+            // enter path relative to project root
+            key: 'example/server/localhost-test-privkey.pem',
+            cert: 'example/server/localhost-test-cert.pem'
+            /**
+             * create self-signed localhost testing certificate that expires in 10 years:
+             * openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 3650 -subj //CN=localhost  -keyout localhost-test-privkey.pem -out localhost-test-cert.pem
+             */
+
         }
     },
     // basic auth credentials
