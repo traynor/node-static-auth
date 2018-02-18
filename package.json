@@ -13,6 +13,7 @@
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.1.2",
     "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-source-map-support-for-6": "0.0.5",
     "babel-preset-env": "^1.6.1",
     "browser-sync": "^2.23.6",
     "gulp": "^3.9.1",
