@@ -5,13 +5,11 @@ var auth = require('basic-auth');
 var path = require('path');
 
 var http = require('http');
-var https = require('https');
-
 var log = require('../logger');
 
 let server;
 
-var NodeStatic = function(config, cb=null) {
+var NodeStatic = function(config, cb = null) {
 
   var logger = log(config);
 
@@ -101,24 +99,55 @@ var NodeStatic = function(config, cb=null) {
 
     })
   }
+  // todo: use native http2
+  if (config.server.http2) {
+    try {
 
-  //let svr;
-  sslOpts
-    ? server = https.createServer(sslOpts, listener) : server = http.createServer(listener);
+      if (parseInt(process.versions.node.split('.')[0]) >= 9) {
+        createServer(true);
+      } else {
+        createServer();
+      }
+    } catch (err) {
+      // fallback to http
+      createServer();
+    }
+  } else {
+    createServer();
+  }
 
-  server.listen(config.server.port || 3001, () => {console.log('Node-static-auth server running on port', config.server.port || 3001); if(cb) cb(server);});
+
+  function createServer(http2 = false) {
+
+    if (http2) {
+      const http2 = require('http2');
+      sslOpts
+        ? server = http2.createSecureServer(sslOpts, listener) : server = http2.createServer(listener);
+    } else {
+
+      var https = require('https');
+
+      sslOpts
+        ? server = https.createServer(sslOpts, listener) : server = http.createServer(listener);
+    }
+  }
+
+  server.listen(config.server.port || 3001, () => {
+    console.log('Node-static-auth server running on port', config.server.port || 3001);
+    if (cb) cb(server);
+  });
 
   if (sslOpts) {
 
     // Redirect from http port 80 to https
     http.createServer(function(req, res) {
-       logger(req, res, err => {
-      console.log('redr>>>>>>', sslOpts && !/https/.test(req.protocol), req.url, req.headers.host)
-      var host = req.headers['host'].split(':')[0];
-      res.writeHead(301, {
-        "Location": 'https://' + host + ':' + config.server.port + req.url
-      });
-      res.end();
+      logger(req, res, err => {
+        console.log('redr>>>>>>', sslOpts && !/https/.test(req.protocol), req.url, req.headers.host)
+        var host = req.headers['host'].split(':')[0];
+        res.writeHead(301, {
+          "Location": 'https://' + host + ':' + config.server.port + req.url
+        });
+        res.end();
       })
     }).listen(config.server.ssl.httpListener || 3000);
   }

@@ -13,6 +13,8 @@ const config = {
     // our web server options
     server: {
         port: 3001,
+        // (node:4200) ExperimentalWarning: The http2 module is an experimental API.
+        http2: true,
         ssl: {
             enabled: true,
             httpListener: 3000,
