@@ -84,8 +84,9 @@ gulp.task('server', ['test'], function() {
 
     return stream;
 })
-// todo: https redirect
+
 gulp.task('browser-sync', ['server'], function() {
+    // todo: http/2 workaround
     browserSync.init({
         port: 3003,
         // todo: const
@@ -97,5 +98,7 @@ gulp.task('browser-sync', ['server'], function() {
         reloadDelay: 1000
     });
 });
+
+gulp.task('no-bs', ['server'], function() {});
 
 gulp.task('default', ['browser-sync']);

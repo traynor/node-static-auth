@@ -14,6 +14,8 @@ const config = {
     server: {
         port: 3001,
         // (node:4200) ExperimentalWarning: The http2 module is an experimental API.
+        // browser-sync proxy no http/2
+        // https://github.com/BrowserSync/browser-sync/issues/1338
         http2: true,
         ssl: {
             enabled: true,

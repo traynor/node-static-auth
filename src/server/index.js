@@ -99,20 +99,14 @@ var NodeStatic = function(config, cb = null) {
 
     })
   }
-  // todo: use native http2
-  if (config.server.http2) {
-    try {
+  let supportsHttp2 = parseInt(process.versions.node.split('.')[0]) >= 9;
 
-      if (parseInt(process.versions.node.split('.')[0]) >= 9) {
-        createServer(true);
-      } else {
-        createServer();
-      }
-    } catch (err) {
-      // fallback to http
-      createServer();
-    }
+  if (config.server.http2 && supportsHttp2) {
+
+    createServer(supportsHttp2);
+
   } else {
+
     createServer();
   }
 
@@ -133,7 +127,7 @@ var NodeStatic = function(config, cb = null) {
   }
 
   server.listen(config.server.port || 3001, () => {
-    console.log('Node-static-auth server running on port', config.server.port || 3001);
+    console.log(`Node-static-auth ${supportsHttp2 ? 'HTTP/2 ' : ''}server running on port ${config.server.port || 3001}`);
     if (cb) cb(server);
   });
 
