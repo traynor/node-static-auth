@@ -1,151 +1,141 @@
+import Logger from '../logger';
+import Utils from './utils';
+
+import auth from 'basic-auth';
+import defaultConfig from './default-config';
+import fs from 'fs';
+import http from 'http';
 import nodeStatic from 'node-static';
-//var nodeStatic = require('node-static');
-var fs = require('fs')
-var auth = require('basic-auth');
-var path = require('path');
+import path from 'path';
 
-var http = require('http');
-var log = require('../logger');
 
-let server;
+const NodeStatic = class {
 
-var NodeStatic = function(config, cb = null) {
+  constructor(inputConfig, cb = null) {
 
-  var logger = log(config);
+    // overwrite default confs with input
+    this.config = Object.assign(defaultConfig, inputConfig);
+    this.cb = cb;
+    this.logger = new Logger(this.config);
 
-  let sslOpts = null;
 
-  if (config.server.ssl.enabled) {
-    //server = https;
-    try {
-      sslOpts = {
-        // get parent directory relative to the script calling this module
-        //key: fs.readFileSync(path.join(path.dirname(module.parent.filename), config.server.ssl.key)),
-        //cert: fs.readFileSync(path.join(path.dirname(module.parent.filename), config.server.ssl.cert))
-        key: fs.readFileSync(path.resolve(config.server.ssl.key)),
-        cert: fs.readFileSync(path.resolve(config.server.ssl.cert)),
-      };
-    } catch (err) {
-      //throw new Error('HTTPS certificate error', err);
-      sslOpts = null;
-      console.error(err, 'HTTPS certificate error -> fallback to http server');
-      console.log('>>>>>>>>>>> path relative to caller module', module.parent.filename, config.server.ssl.key, path.join(path.dirname(module.parent.filename), path.resolve(config.server.ssl.key), process.cwd()))
-        //server = http;
-    }
+    this.sslOpts = null;
 
-  } else {
-    //server = http;
-  }
+    if (this.config.server.ssl.enabled) {
 
-  var fileServer = new nodeStatic.Server(config.nodeStatic.root);
-
-  function listener(request, response) {
-
-    let host = request.connection.encrypted ? 'https://' + request.headers.host : 'http://' + request.headers.host;
-
-    // todo: fix favicon
-    /*
-     "GET /favicon.ico HTTP/1.1" 404
-     */
-
-    logger(request, response, err => {
-
-      var credentials = auth(request);
-
-      if (!credentials || credentials.name !== config.auth.name || credentials.password !== config.auth.password) {
-        var head = {
-          'WWW-Authenticate': 'Basic realm="Protected"' || 'Basic realm="' + config.auth.realm + '"'
+      try {
+        this.sslOpts = {
+          key: fs.readFileSync(path.resolve(this.config.server.ssl.key)),
+          cert: fs.readFileSync(path.resolve(this.config.server.ssl.cert))
         };
-        response.writeHead(401, head);
-        response.end('Access denied')
-        return;
+      } catch (err) {
+        //throw new Error('HTTPS certificate error', err);
+        this.sslOpts = null;
+        console.error(err, 'HTTPS certificate error -> fallback to http server');
       }
 
+    }
 
-      request.addListener('end', function() {
+    this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root);
 
-        fileServer.serve(request, response, function(err, result) {
+    this.supportsHttp2 = Utils.isHttp2Supported();
 
-          console.log('static res', err, result)
+    if (this.config.server.http2 && this.supportsHttp2) {
+
+      this.createServer(this.supportsHttp2);
+
+    } else {
+
+      this.createServer();
+    }
+
+  }
+
+  createServer(http2 = false) {
+
+    if (http2) {
+
+      // todo: handle 'import' and 'export' may only appear at the top level
+      const http2 = require('http2');
+
+      // need to bind `this` to listener method
+      this.sslOpts ? this.server = http2.createSecureServer(this.sslOpts, this.listener.bind(this)) : this.server = http2.createServer(this.listener.bind(this));
+    } else {
+
+      // todo: handle 'import' and 'export' may only appear at the top level
+      const https = require('https');
+
+      this.sslOpts ? this.server = https.createServer(this.sslOpts, this.listener.bind(this)) : this.server = http.createServer(this.listener.bind(this));
+    }
+
+
+    this.server.listen(this.config.server.port, () => {
+
+      console.log(`Node-static-auth ${this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
+      // return server instance for closing
+      if (this.cb) this.cb(this.server);
+    });
+
+    // create listener to redirect from http port 80 to https
+    if (this.sslOpts) {
+
+      http.createServer((request, response) => {
+
+        this.logger.log(request, response, (next) => {
+          console.log('http listener redirecting', this.sslOpts && !(/https/).test(request.protocol), request.url, request.headers.host)
+          Utils.redirect(response, request.headers, this.config.server.port, request.url);
+        });
+      }).listen(this.config.server.ssl.httpListener);
+    }
+  }
+
+  listener(request, response) {
+
+
+    const hostHeader = this.supportsHttp2 ? request.headers[':authority'] : request.headers.host;
+
+    const host = request.connection.encrypted ? `https://${hostHeader}` : `http://${hostHeader}`;
+
+    this.logger.log(request, response, (next) => {
+
+      if (this.config.auth.enabled) {
+
+        const credentials = auth(request);
+
+        if (!credentials || credentials.name !== this.config.auth.name && credentials.pass !== this.config.auth.pass) {
+
+          Utils.sendForbidden(response, this.config.auth.realm);
+          return;
+        }
+      }
+
+      request.addListener('end', () => {
+
+        this.fileServer.serve(request, response, function(err, result) {
 
           // There was an error serving the file
           if (err) {
+            // ignore favicon request
+            if (request.url === '/favicon.ico') {
 
+              return;
+            }
             if (err.status === 404) {
 
-              console.error("Page not found " + request.url + " - " + err.message, request.headers.host, response.headers);
+              console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
+              Utils.sendNotFound(response, err, host, request.url);
 
-              // Respond to the client
-              response.writeHead(err.status, err.headers);
-
-              //logger.log(null, request.connection.remoteAddress, "(credentials && credentials.name ? credentials.name : '-')", request.method, request.url, response.statusCode, response.socket._bytesDispatched/*response.headers['content-length']*/, request.headers['user-agent']);
-
-              response.end('<html><body align="center"><br>' + err.status + ' Not Found<br><p>Page <b>' + host + request.url + '</b> was not found on this server</p><p><a href="/">Home</a></p></body></html>');
             } else {
+
               console.error("Error serving " + request.url + " - " + err.message);
-
-              // Respond to the client
-              response.writeHead(err.status, err.headers);
-              //logger.log();
-              response.end('<html><body align="center"><br>' + err.status + '<br><p>Error serving: "<b>' + request.url + '</b>"</p><p>' + err.message + '<p><a href="/">Home</a></p></body></html>');
+              Utils.sendError(response, err, request.url);
             }
-          } else {
-            //logger.log();
           }
-
         });
       }).resume();
 
-
-    })
+    });
   }
-  let supportsHttp2 = parseInt(process.versions.node.split('.')[0]) >= 9;
-
-  if (config.server.http2 && supportsHttp2) {
-
-    createServer(supportsHttp2);
-
-  } else {
-
-    createServer();
-  }
-
-
-  function createServer(http2 = false) {
-
-    if (http2) {
-      const http2 = require('http2');
-      sslOpts
-        ? server = http2.createSecureServer(sslOpts, listener) : server = http2.createServer(listener);
-    } else {
-
-      var https = require('https');
-
-      sslOpts
-        ? server = https.createServer(sslOpts, listener) : server = http.createServer(listener);
-    }
-  }
-
-  server.listen(config.server.port || 3001, () => {
-    console.log(`Node-static-auth ${supportsHttp2 ? 'HTTP/2 ' : ''}server running on port ${config.server.port || 3001}`);
-    if (cb) cb(server);
-  });
-
-  if (sslOpts) {
-
-    // Redirect from http port 80 to https
-    http.createServer(function(req, res) {
-      logger(req, res, err => {
-        console.log('redr>>>>>>', sslOpts && !/https/.test(req.protocol), req.url, req.headers.host)
-        var host = req.headers['host'].split(':')[0];
-        res.writeHead(301, {
-          "Location": 'https://' + host + ':' + config.server.port + req.url
-        });
-        res.end();
-      })
-    }).listen(config.server.ssl.httpListener || 3000);
-  }
-
 }
 
 export default NodeStatic;

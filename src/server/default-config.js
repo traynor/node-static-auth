@@ -1,11 +1,8 @@
-const NodeStaticAuth = require('../../lib');
-
-console.log('>>example go');
 const config = {
     nodeStatic: {
         // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
         // use path relative to project root, i.e. process.cwd()
-        root: 'example/public',
+        root: './',
         options: {
             indexFile: 'index.html' || 'index.html'
         }
@@ -13,14 +10,15 @@ const config = {
     // our web server options
     server: {
         port: 3001,
-        // `ExperimentalWarning: The http2 module is an experimental API.`
+        // (node:4200) ExperimentalWarning: The http2 module is an experimental API.
         // browser-sync proxy no http/2
         // https://github.com/BrowserSync/browser-sync/issues/1338
         http2: true,
         ssl: {
             enabled: true,
             httpListener: 3000,
-            // enter path to certificate relative to project root
+            // enter path to real certificate relative to project root
+            // otherwise use self-signed for testing
             /**
              * these are some bogus certificates for testing
              * create self-signed localhost testing certificate that expires in 10 years:
@@ -32,7 +30,7 @@ const config = {
     },
     // basic auth credentials
     auth: {
-        enabled: true, // set `false` to disable
+        enabled: true, // false disable
         name: 'test' || process.env.NAME,
         pass: 'test' || process.env.PASS,
         realm: 'Private' || process.env.REALM
@@ -41,11 +39,11 @@ const config = {
     // todo: enable morgan conf
     logger: {
         use: true, // false disable
-        // make sure directory exists first, if using one
-        filename: 'example/server/access.log',
+        // make sure directory exists first
+        filename: 'access.log',
         type: 'combined',
         fields: []
     }
 }
 
-const server = new NodeStaticAuth(config);
+export default config;

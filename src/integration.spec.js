@@ -1,14 +1,12 @@
-const request = require('superagent'),
-  //express = require('express'),
-  assert = require('better-assert'),
-  //app = express(),
-  //url = require('url'),
-  //https = require('https'),
-  fs = require('fs'),
-  key = fs.readFileSync(__dirname + '/../example/server/localhost-test-privkey.pem'),
-  cert = fs.readFileSync(__dirname + '/../example/server/localhost-test-cert.pem');
-let config, nodeStaticAuth, inst;
+import assert from 'better-assert';
+import defaultConfig from './server/default-config';
+import fs from 'fs';
+import request from 'superagent';
 
+let config, inst;
+
+//const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
+const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
 
 config = {
   nodeStatic: {
@@ -33,7 +31,7 @@ config = {
   },
   // basic auth credentials
   auth: {
-    use: true, // false disable
+    enabled: true, // false disable
     name: 'test' || process.env.NAME,
     pass: 'test' || process.env.PASS,
     realm: 'Private' || process.env.REALM
@@ -43,7 +41,7 @@ config = {
   logger: {
     use: true, // false disable
     // make sure directory exists first
-    filename: 'example/server/access.log',
+    filename: 'example/server/test-access.log',
     type: 'combined',
     fields: []
   }
@@ -53,9 +51,9 @@ config = {
 before(function(done) {
   // runs before all tests in this block
 
-  nodeStaticAuth = require('../lib');
+  const NodeStaticAuth = require('../lib');
 
-  const server = nodeStaticAuth(config, (svr) => {
+  let nodeStaticAuth = new NodeStaticAuth(config, (svr) => {
     inst = svr;
     console.log('test svr running');
     done();
@@ -71,8 +69,7 @@ describe('static-auth server', function() {
       request
         .get('http://localhost:3008')
         .on('redirect', (rs) => {
-          console.log('agent redr', rs.headers);
-          assert(rs.headers['location'] === 'https://localhost:3009/');
+          assert(rs.headers.location === 'https://localhost:3009/');
           done();
         })
         .end();
@@ -81,7 +78,7 @@ describe('static-auth server', function() {
   } else {
     it.skip('serving plain http, so skipping http->https redirect')
   }
-  let supportsHttp2 = parseInt(process.versions.node.split('.')[0]) >= 9;
+  let supportsHttp2 = parseInt(process.versions.node.split('.')[0], 10) >= 9;
   if (config.server.http2 && supportsHttp2) {
 
     // todo: add http2 test
@@ -98,21 +95,56 @@ describe('static-auth server', function() {
         })
         .ca(cert)
         .end(function(err, res) {
-          console.log('>>>>>agent response', res.text)
           assert(res.ok);
-          //assert('Safe and secure!' === res.text);
           done();
         });
     });
+    it('should not allow access if Basic auth is required', function(done) {
+
+      if (config.auth.enabled) {
+        request
+          .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:3009`)
+          .auth('hack', 'hack', {
+            type: 'auto'
+          })
+          .ca(cert)
+          .end(function(err, res) {
+            assert(res.status === 401);
+            done();
+          });
+      } else {
+        this.skip('no basic auth required');
+      }
+    });
   }
+  it('should give 404 when page not found Basic auth', function(done) {
+
+    if (config.server.http2 && supportsHttp2) {
+      this.skip();
+    } else {
+      request
+        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:3009/no-page-here`)
+        .auth('test', 'test', {
+          type: 'auto'
+        })
+        .ca(cert)
+        .end(function(err, res) {
+          assert(res.status === 404);
+          done();
+        });
+    }
+  });
   it('should have access logged to a file', function(done) {
 
     if (config.logger.use) {
-      console.log('>>>>>>fajla', fs.existsSync(__dirname + '/../' + config.logger.filename))
+      //console.log('>>>>>>log file:', fs.existsSync(__dirname + '/../' + config.logger.filename))
       try {
-        let log = fs.readFile(__dirname + '/../' + config.logger.filename, 'utf8', (err, data) => {
-          if (err) throw new Error(err);
-          done();
+        fs.readFile(__dirname + '/../' + config.logger.filename, 'utf8', (err, data) => {
+          if (err) {
+            throw new Error(err);
+          } else {
+            done();
+          }
         });
       } catch (err) {
 
@@ -129,5 +161,6 @@ describe('static-auth server', function() {
 // close svr: todo: close both servers
 // gulp hangs otherwise
 after(function() {
+  fs.unlink(config.logger.filename);
   inst.close();
 })
