@@ -43,6 +43,25 @@ const Utils = class {
     response.end('<html><body align="center"><br>' + err.status + '<br><p>Error serving: "<b>' + url + '</b>"</p><p>' + err.message + '<p><a href="/">Home</a></p></body></html>');
   }
 
+  static sendCustom(request, response, type, file, fileServer, log) {
+
+    let headers = {};
+    if (type === 401) {
+      headers = {
+        'WWW-Authenticate': 'Basic realm="Protected"' || 'Basic realm="' + realm + '"'
+      };
+    }
+
+    fileServer.serveFile(file, type, headers, request, response);
+
+    request.addListener('end', function() {
+
+      log(request, response, () => {
+        /*console.log('logger logged');*/
+      });
+    })
+  }
+
 }
 
 export default Utils;

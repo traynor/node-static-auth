@@ -36,6 +36,11 @@ const NodeStatic = class {
 
     }
 
+    // todo: fix http2 headers sent bug when calling node-static `serveFile`
+    if (this.config.server.customPages && this.config.server.http2) {
+      console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> falling back built in', '\x1b[0m');
+    }
+
     this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root);
 
     this.supportsHttp2 = Utils.isHttp2Supported();
@@ -71,7 +76,7 @@ const NodeStatic = class {
 
     this.server.listen(this.config.server.port, () => {
 
-      console.log(`Node-static-auth ${this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
+      console.log(`Node-static-auth ${this.config.server.http2 && this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
       // return server instance for closing
       if (this.cb) this.cb(this.server);
     });
@@ -92,49 +97,83 @@ const NodeStatic = class {
   listener(request, response) {
 
 
+    // ignore favicon request earyl
+    if (request.url === '/favicon.ico') {
+
+      return false;
+    }
+
     const hostHeader = this.supportsHttp2 ? request.headers[':authority'] : request.headers.host;
 
     const host = request.connection.encrypted ? `https://${hostHeader}` : `http://${hostHeader}`;
 
-    this.logger.log(request, response, (next) => {
 
-      if (this.config.auth.enabled) {
+    // handle auth first
+    if (this.config.auth.enabled) {
 
-        const credentials = auth(request);
+      const credentials = auth(request);
 
-        if (!credentials || credentials.name !== this.config.auth.name && credentials.pass !== this.config.auth.pass) {
-
-          Utils.sendForbidden(response, this.config.auth.realm);
-          return;
+      if (!credentials || credentials.name !== this.config.auth.name && credentials.pass !== this.config.auth.pass) {
+        if (this.config.server.customPages && !this.config.server.http2) {
+          Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger.log.bind(this.logger));
+        } else {
+          this.logger.log(request, response, () => {
+            Utils.sendForbidden(response, this.config.auth.realm);
+          });
         }
+        return;
       }
+    }
 
+    // if custom pages, pass server and logger an break
+    if (this.config.server.customPages && !this.config.server.http2) {
+
+      this.fileServer.serve(request, response, (err, result) => {
+        // handle custom pages, log and finish response there
+        if (err) {
+
+          if (err.status === 404) {
+
+            Utils.sendCustom(request, response, 404, this.config.server.customPages.notFound, this.fileServer, this.logger.log.bind(this.logger));
+
+          } else {
+
+            Utils.sendCustom(request, response, 500, this.config.server.customPages.error, this.fileServer, this.logger.log.bind(this.logger));
+          }
+
+        } else {
+          // log everything else, finish response
+          this.logger.log(request, response, () => {});
+        }
+      });
+
+    } else {
+
+      // handle serving and logging
       request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, function(err, result) {
+        this.fileServer.serve(request, response, (err, result) => {
 
-          // There was an error serving the file
-          if (err) {
-            // ignore favicon request
-            if (request.url === '/favicon.ico') {
+          this.logger.log(request, response, () => {
+            // There was an error serving the file
+            if (err) {
 
-              return;
+              if (err.status === 404) {
+
+                console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
+                Utils.sendNotFound(response, err, host, request.url);
+
+              } else {
+
+                console.error("Error serving " + request.url + " - " + err.message);
+                Utils.sendError(response, err, request.url);
+              }
             }
-            if (err.status === 404) {
-
-              console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
-              Utils.sendNotFound(response, err, host, request.url);
-
-            } else {
-
-              console.error("Error serving " + request.url + " - " + err.message);
-              Utils.sendError(response, err, request.url);
-            }
-          }
+          });
         });
-      }).resume();
 
-    });
+      }).resume();
+    }
   }
 }
 

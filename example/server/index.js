@@ -16,7 +16,7 @@ const config = {
         // `ExperimentalWarning: The http2 module is an experimental API.`
         // browser-sync proxy no http/2
         // https://github.com/BrowserSync/browser-sync/issues/1338
-        http2: true,
+        http2: false,
         ssl: {
             enabled: true,
             httpListener: 3000,
@@ -28,6 +28,11 @@ const config = {
              */
             key: 'example/server/localhost-test-privkey.pem',
             cert: 'example/server/localhost-test-cert.pem'
+        },
+        customPages: {
+            forbidden: 'forbidden.html',
+            notFound: 'notFound.html',
+            error: 'error.html'
         }
     },
     // basic auth credentials

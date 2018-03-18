@@ -26,7 +26,8 @@ const config = {
              */
             key: 'example/server/localhost-test-privkey.pem',
             cert: 'example/server/localhost-test-cert.pem'
-        }
+        },
+        customPages: {}
     },
     // basic auth credentials
     auth: {

@@ -20,7 +20,7 @@ config = {
   // our web server options
   server: {
     port: 3009,
-    http2: true,
+    http2: false,
     ssl: {
       enabled: true,
       httpListener: 3008,
@@ -60,6 +60,7 @@ before(function(done) {
   });
 });
 
+let logs = [];
 
 describe('static-auth server', function() {
 
@@ -67,9 +68,10 @@ describe('static-auth server', function() {
     it('should have http listener that redirects to https', function(done) {
 
       request
-        .get('http://localhost:3008')
+        .get(`http://localhost:${config.server.ssl.httpListener}/?redirect-2-secured`)
         .on('redirect', (rs) => {
-          assert(rs.headers.location === 'https://localhost:3009/');
+          assert(rs.headers.location === `https://localhost:${config.server.port}/?redirect-2-secured`);
+          logs.push('/?redirect-2-secured');
           done();
         })
         .end();
@@ -89,13 +91,28 @@ describe('static-auth server', function() {
     it('should login via Basic auth and access server', function(done) {
 
       request
-        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:3009`)
+        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/?successful-login`)
         .auth('test', 'test', {
           type: 'auto'
         })
         .ca(cert)
         .end(function(err, res) {
           assert(res.ok);
+          logs.push('/?successful-login');
+          done();
+        });
+    });
+    it('should get other static files', function(done) {
+
+      request
+        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/css.css`)
+        .auth('test', 'test', {
+          type: 'auto'
+        })
+        .ca(cert)
+        .end(function(err, res) {
+          assert(res.ok);
+          logs.push('/css.css');
           done();
         });
     });
@@ -103,13 +120,14 @@ describe('static-auth server', function() {
 
       if (config.auth.enabled) {
         request
-          .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:3009`)
+          .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/?forbidden`)
           .auth('hack', 'hack', {
             type: 'auto'
           })
           .ca(cert)
           .end(function(err, res) {
             assert(res.status === 401);
+            logs.push('/?forbidden');
             done();
           });
       } else {
@@ -123,13 +141,14 @@ describe('static-auth server', function() {
       this.skip();
     } else {
       request
-        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:3009/no-page-here`)
+        .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/no-page-here`)
         .auth('test', 'test', {
           type: 'auto'
         })
         .ca(cert)
         .end(function(err, res) {
           assert(res.status === 404);
+          logs.push('/no-page-here');
           done();
         });
     }
@@ -143,6 +162,16 @@ describe('static-auth server', function() {
           if (err) {
             throw new Error(err);
           } else {
+            let passing = false;
+            logs.forEach(log => {
+              if (data.includes(log)) {
+                passing = true;
+              } else {
+                console.log('access failed:', log, 'data', data);
+                passing = false;
+                throw new Error('Access not logged');
+              }
+            });
             done();
           }
         });
