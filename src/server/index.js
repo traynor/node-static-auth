@@ -14,10 +14,11 @@ const NodeStatic = class {
   constructor(inputConfig, cb = null) {
 
     // overwrite default confs with input
-    this.config = Object.assign(defaultConfig, inputConfig);
-    this.cb = cb;
-    this.logger = new Logger(this.config);
+    this.config = Utils.mergeDeep(defaultConfig, inputConfig);
+    //this.config = Object.assign(defaultConfig, inputConfig);
 
+    this.cb = cb;
+    this.logger = new Logger(this.config.logger);
 
     this.sslOpts = null;
 
@@ -41,7 +42,7 @@ const NodeStatic = class {
       console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> falling back built in', '\x1b[0m');
     }
 
-    this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root);
+    this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root, this.config.nodeStatic.options);
 
     this.supportsHttp2 = Utils.isHttp2Supported();
 
@@ -57,7 +58,7 @@ const NodeStatic = class {
   }
 
   createServer(http2 = false) {
-
+    console.log(`using Basic auth protection: ${this.config.auth.enabled ? 'Yes' : 'No'}`);
     if (http2) {
 
       // todo: handle 'import' and 'export' may only appear at the top level
@@ -78,7 +79,9 @@ const NodeStatic = class {
 
       console.log(`Node-static-auth ${this.config.server.http2 && this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
       // return server instance for closing
-      if (this.cb) this.cb(this.server);
+      if (this.cb) {
+        this.cb(this.server);
+      }
     });
 
     // create listener to redirect from http port 80 to https
@@ -86,8 +89,8 @@ const NodeStatic = class {
 
       http.createServer((request, response) => {
 
-        this.logger.log(request, response, (next) => {
-          console.log('http listener redirecting', this.sslOpts && !(/https/).test(request.protocol), request.url, request.headers.host)
+        this.logger.log(request, response, () => {
+          //console.log('http listener redirecting', this.sslOpts && !(/https/).test(request.protocol), request.url, request.headers.host);
           Utils.redirect(response, request.headers, this.config.server.port, request.url);
         });
       }).listen(this.config.server.ssl.httpListener);
@@ -113,7 +116,7 @@ const NodeStatic = class {
 
       const credentials = auth(request);
 
-      if (!credentials || credentials.name !== this.config.auth.name && credentials.pass !== this.config.auth.pass) {
+      if (!credentials || credentials.name !== this.config.auth.name || credentials.pass !== this.config.auth.pass) {
         if (this.config.server.customPages && !this.config.server.http2) {
           Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger.log.bind(this.logger));
         } else {
@@ -128,7 +131,7 @@ const NodeStatic = class {
     // if custom pages, pass server and logger an break
     if (this.config.server.customPages && !this.config.server.http2) {
 
-      this.fileServer.serve(request, response, (err, result) => {
+      this.fileServer.serve(request, response, (err/*, result*/) => {
         // handle custom pages, log and finish response there
         if (err) {
 
@@ -152,7 +155,7 @@ const NodeStatic = class {
       // handle serving and logging
       request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, (err, result) => {
+        this.fileServer.serve(request, response, (err/*, result*/) => {
 
           this.logger.log(request, response, () => {
             // There was an error serving the file
@@ -160,12 +163,12 @@ const NodeStatic = class {
 
               if (err.status === 404) {
 
-                console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
+                //console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
                 Utils.sendNotFound(response, err, host, request.url);
 
               } else {
 
-                console.error("Error serving " + request.url + " - " + err.message);
+                //console.error("Error serving " + request.url + " - " + err.message);
                 Utils.sendError(response, err, request.url);
               }
             }

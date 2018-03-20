@@ -36,25 +36,8 @@ gulp.task('compile', ['lint'], function() {
     return stream // important for gulp-nodemon to wait for completion
 });
 
-gulp.task('test-custom', ['compile'], function() {
-    const stream = gulp.src(['lib/custom.spec.js'])
-        .pipe(mocha({
-            reporter: 'list',
-            // prevent from hanging on callback
-            exit: true
-        }))
-        .once('error', (err) => {
-            process.exit(1);
-        })
-        .once('end', () => {
-            //process.exit();
-        });
-    return stream;
-});
-
-// todo: fix ugly workaround for test order
-gulp.task('test', ['test-custom'], function() {
-    const stream = gulp.src(['lib/integration.spec.js'])
+gulp.task('test', ['compile'], function() {
+    const stream = gulp.src([dest])
         .pipe(mocha({
             reporter: 'list',
             // prevent from hanging on callback

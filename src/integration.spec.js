@@ -1,6 +1,7 @@
 import assert from 'better-assert';
 import defaultConfig from './server/default-config';
 import fs from 'fs';
+import nrc from 'node-run-cmd';
 import request from 'superagent';
 
 let config, inst;
@@ -41,9 +42,10 @@ config = {
   logger: {
     use: true, // false disable
     // make sure directory exists first
-    filename: 'example/server/test-access.log',
+    filename: 'test-access.log',
+    folder: 'example/server/logs2',
     type: 'combined',
-    fields: []
+    options: {}
   }
 }
 
@@ -158,7 +160,7 @@ describe('static-auth server', function() {
     if (config.logger.use) {
       //console.log('>>>>>>log file:', fs.existsSync(__dirname + '/../' + config.logger.filename))
       try {
-        fs.readFile(__dirname + '/../' + config.logger.filename, 'utf8', (err, data) => {
+        fs.readFile(__dirname + '/../' + config.logger.folder + '/' + config.logger.filename, 'utf8', (err, data) => {
           if (err) {
             throw new Error(err);
           } else {
@@ -189,7 +191,13 @@ describe('static-auth server', function() {
 
 // close svr: todo: close both servers
 // gulp hangs otherwise
-after(function() {
-  fs.unlink(config.logger.filename);
+after(function(done) {
+
+  const dataCallback = function(data) {
+    done();
+  };
+  nrc.run('rm -rf ' + config.logger.folder, {
+    onDone: dataCallback
+  });
   inst.close();
 })

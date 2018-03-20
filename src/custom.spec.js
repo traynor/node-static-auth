@@ -1,6 +1,7 @@
 import assert from 'better-assert';
 import defaultConfig from './server/default-config';
 import fs from 'fs';
+import nrc from 'node-run-cmd';
 import request from 'superagent';
 
 let config, inst;
@@ -46,7 +47,8 @@ config = {
   logger: {
     use: true, // false disable
     // make sure directory exists first
-    filename: 'example/server/custom-access.log',
+    filename: 'custom-access.log',
+    folder: 'example/server/clogs',
     type: 'combined',
     fields: []
   }
@@ -60,7 +62,6 @@ before(function(done) {
 
   let custom = new NodeStaticAuth2(config, (svr) => {
     inst = svr;
-    console.log('custom svr running', config.server);
     done();
   });
 });
@@ -88,6 +89,8 @@ describe('static-auth server', function() {
   });
   it('should get custom 404 page', function(done) {
 
+    // todo: use Utils
+    let supportsHttp2 = parseInt(process.versions.node.split('.')[0], 10) >= 9;
     if (config.server.http2 && supportsHttp2) {
       this.skip();
     } else {
@@ -114,7 +117,14 @@ describe('static-auth server', function() {
 
 // close svr: todo: close both servers
 // gulp hangs otherwise
-after(function() {
-  fs.unlink(config.logger.filename);
+after(function(done) {
+
+  const dataCallback = function(data) {
+    done();
+  };
+  nrc.run('rm -rf ' + config.logger.folder, {
+    onDone: dataCallback
+  });
+
   inst.close();
 })

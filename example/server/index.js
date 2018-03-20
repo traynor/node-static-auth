@@ -16,7 +16,7 @@ const config = {
         // `ExperimentalWarning: The http2 module is an experimental API.`
         // browser-sync proxy no http/2
         // https://github.com/BrowserSync/browser-sync/issues/1338
-        http2: false,
+        http2: true,
         ssl: {
             enabled: true,
             httpListener: 3000,
@@ -47,9 +47,14 @@ const config = {
     logger: {
         use: true, // false disable
         // make sure directory exists first, if using one
-        filename: 'example/server/access.log',
+        filename: 'access.log',
+        folder: 'example/server/logs',
+        logRotation: {
+            use:false,
+            options: {}
+        },
         type: 'combined',
-        fields: []
+        options: {}
     }
 }
 

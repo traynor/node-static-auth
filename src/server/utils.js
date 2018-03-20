@@ -1,3 +1,6 @@
+import deepMerge from 'deepmerge';
+
+
 /**
  * server helper
  */
@@ -61,6 +64,12 @@ const Utils = class {
       });
     })
   }
+
+  static mergeDeep(target, source) {
+
+    return deepMerge(target, source);
+  }
+
 
 }
 
