@@ -42,7 +42,6 @@ const config = {
     realm: 'Private' || process.env.REALM
   },
   // logger file options
-  // todo: enable morgan conf
   logger: {
     use: true, // false disable
     // make sure directory exists first

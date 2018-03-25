@@ -94,10 +94,14 @@ const NodeStatic = class {
 
       http.createServer((request, response) => {
 
-        this.logger.log(request, response, () => {
-          //console.log('http listener redirecting', this.sslOpts && !(/https/).test(request.protocol), request.url, request.headers.host);
+        if (this.logger) {
+          this.logger.log(request, response, () => {
+            //console.log('http listener redirecting', this.sslOpts && !(/https/).test(request.protocol), request.url, request.headers.host);
+            Utils.redirect(response, request.headers, this.config.server.port, request.url);
+          });
+        } else {
           Utils.redirect(response, request.headers, this.config.server.port, request.url);
-        });
+        }
       }).listen(this.config.server.ssl.httpListener);
     }
   }
@@ -111,7 +115,7 @@ const NodeStatic = class {
       return false;
     }
 
-    const hostHeader = this.supportsHttp2 ? request.headers[':authority'] : request.headers.host;
+    const hostHeader = this.config.server.http2 && this.supportsHttp2 ? request.headers[':authority'] : request.headers.host;
 
     const host = request.connection.encrypted ? `https://${hostHeader}` : `http://${hostHeader}`;
 
@@ -123,11 +127,15 @@ const NodeStatic = class {
 
       if (!credentials || credentials.name !== this.config.auth.name || credentials.pass !== this.config.auth.pass) {
         if (this.config.server.customPages && !this.config.server.http2) {
-          Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger.log.bind(this.logger));
+          Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
         } else {
-          this.logger.log(request, response, () => {
+          if (this.logger) {
+            this.logger.log(request, response, () => {
+              Utils.sendForbidden(response, this.config.auth.realm);
+            });
+          } else {
             Utils.sendForbidden(response, this.config.auth.realm);
-          });
+          }
         }
         return;
       }
@@ -137,31 +145,34 @@ const NodeStatic = class {
     if (this.config.server.customPages && !this.config.server.http2) {
 
       this.fileServer.serve(request, response, (err /*, result*/ ) => {
-        // handle custom pages, log and finish response there
-        if (err) {
+          // handle custom pages, log and finish response there
+          if (err) {
 
-          if (err.status === 404) {
+            if (err.status === 404) {
 
-            Utils.sendCustom(request, response, 404, this.config.server.customPages.notFound, this.fileServer, this.logger.log.bind(this.logger));
+              Utils.sendCustom(request, response, 404, this.config.server.customPages.notFound, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
 
-          } else {
+            } else {
 
-            Utils.sendCustom(request, response, 500, this.config.server.customPages.error, this.fileServer, this.logger.log.bind(this.logger));
+              Utils.sendCustom(request, response, 500, this.config.server.customPages.error, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
           }
 
         } else {
-          // log everything else, finish response
-          this.logger.log(request, response, () => {});
+          if (this.logger) {
+            // log everything else, finish response
+            this.logger.log(request, response, () => {});
+          }
         }
       });
 
-    } else {
+  } else {
 
-      // handle serving and logging
-      request.addListener('end', () => {
+    // handle serving and logging
+    request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, (err /*, result*/ ) => {
+      this.fileServer.serve(request, response, (err /*, result*/ ) => {
 
+        if (this.logger) {
           this.logger.log(request, response, () => {
             // There was an error serving the file
             if (err) {
@@ -178,11 +189,27 @@ const NodeStatic = class {
               }
             }
           });
-        });
+        } else {
+          if (err) {
 
-      }).resume();
-    }
+            if (err.status === 404) {
+
+              //console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
+              Utils.sendNotFound(response, err, host, request.url);
+
+            } else {
+
+              //console.error("Error serving " + request.url + " - " + err.message);
+              Utils.sendError(response, err, request.url);
+            }
+          }
+        }
+
+      });
+
+    }).resume();
   }
+}
 }
 
 export default NodeStatic;
