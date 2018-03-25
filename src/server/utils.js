@@ -8,7 +8,6 @@ const Utils = class {
 
   static isHttp2Supported() {
     let supported = parseInt(process.versions.node.split('.')[0], 10) >= 9;
-    console.log('HTTP/2 supported?', supported ? 'Yes' : 'No');
     return supported;
   }
 

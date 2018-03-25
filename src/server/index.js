@@ -18,7 +18,12 @@ const NodeStatic = class {
     //this.config = Object.assign(defaultConfig, inputConfig);
 
     this.cb = cb;
-    this.logger = new Logger(this.config.logger);
+
+    if (this.config.logger.use) {
+      this.logger = new Logger(this.config.logger);
+    } else {
+      console.log('Not using log file');
+    }
 
     this.sslOpts = null;
 
@@ -32,19 +37,18 @@ const NodeStatic = class {
       } catch (err) {
         //throw new Error('HTTPS certificate error', err);
         this.sslOpts = null;
-        console.error(err, 'HTTPS certificate error -> fallback to http server');
+        console.error(err, 'HTTPS certificate error -> fallback to HTTP server');
       }
 
     }
 
-    // todo: fix http2 headers sent bug when calling node-static `serveFile`
-    if (this.config.server.customPages && this.config.server.http2) {
-      console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> falling back built in', '\x1b[0m');
+    this.supportsHttp2 = Utils.isHttp2Supported();
+
+    if (this.config.server.customPages && this.config.server.http2 && this.supportsHttp2) {
+      console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> fallback to built in', '\x1b[0m');
     }
 
     this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root, this.config.nodeStatic.options);
-
-    this.supportsHttp2 = Utils.isHttp2Supported();
 
     if (this.config.server.http2 && this.supportsHttp2) {
 
@@ -58,7 +62,7 @@ const NodeStatic = class {
   }
 
   createServer(http2 = false) {
-    console.log(`using Basic auth protection: ${this.config.auth.enabled ? 'Yes' : 'No'}`);
+
     if (http2) {
 
       // todo: handle 'import' and 'export' may only appear at the top level
@@ -76,7 +80,8 @@ const NodeStatic = class {
 
 
     this.server.listen(this.config.server.port, () => {
-
+      console.log(`Using Basic auth protection: ${this.config.auth.enabled ? 'Yes' : 'No'}`);
+      console.log('HTTP/2 supported?', this.supportsHttp2 ? 'Yes' : 'No');
       console.log(`Node-static-auth ${this.config.server.http2 && this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
       // return server instance for closing
       if (this.cb) {
@@ -131,7 +136,7 @@ const NodeStatic = class {
     // if custom pages, pass server and logger an break
     if (this.config.server.customPages && !this.config.server.http2) {
 
-      this.fileServer.serve(request, response, (err/*, result*/) => {
+      this.fileServer.serve(request, response, (err /*, result*/ ) => {
         // handle custom pages, log and finish response there
         if (err) {
 
@@ -155,7 +160,7 @@ const NodeStatic = class {
       // handle serving and logging
       request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, (err/*, result*/) => {
+        this.fileServer.serve(request, response, (err /*, result*/ ) => {
 
           this.logger.log(request, response, () => {
             // There was an error serving the file

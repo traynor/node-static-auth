@@ -14,7 +14,7 @@ const Logger = class {
 
     this.config = config;
 
-    console.log('log file: type:', this.config.type, ' location:', path.resolve(this.config.folder));
+    console.log(`Using log file: log type: '${this.config.type}', location:, '${path.resolve(this.config.folder, this.config.filename)}'`);
 
     this.logDirectory = path.normalize(path.resolve(this.config.folder));
 

@@ -7,7 +7,7 @@ const config = {
         // use path relative to project root, i.e. process.cwd()
         root: 'example/public',
         options: {
-            indexFile: 'index.html' || 'index.html'
+            indexFile: 'index.html'
         }
     },
     // our web server options
