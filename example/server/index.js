@@ -49,7 +49,7 @@ const config = {
         filename: 'access.log',
         folder: 'example/server/logs',
         logRotation: {
-            use:false,
+            use: false,
             options: {}
         },
         type: 'combined',

@@ -126,7 +126,7 @@ const NodeStatic = class {
       const credentials = auth(request);
 
       if (!credentials || credentials.name !== this.config.auth.name || credentials.pass !== this.config.auth.pass) {
-        if (this.config.server.customPages && !this.config.server.http2) {
+        if (this.config.server.customPages && this.config.server.customPages.forbidden && !this.config.server.http2) {
           Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
         } else {
           if (this.logger) {
@@ -141,20 +141,36 @@ const NodeStatic = class {
       }
     }
 
-    // if custom pages, pass server and logger an break
+    // if custom pages, pass data for custom render
+    // check which custom page later
     if (this.config.server.customPages && !this.config.server.http2) {
 
       this.fileServer.serve(request, response, (err /*, result*/ ) => {
-          // handle custom pages, log and finish response there
-          if (err) {
 
-            if (err.status === 404) {
+        // handle custom pages, log and finish response there
+        if (err) {
 
+          if (err.status === 404) {
+
+            // check if custom err page, else use default
+            if (this.config.server.customPages.notFound) {
               Utils.sendCustom(request, response, 404, this.config.server.customPages.notFound, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
-
             } else {
+              this.logger.log(request, response, () => {
+                Utils.sendNotFound(response, err, host, request.url);
+              });
+            }
+
+          } else {
+
+            if (this.config.server.customPages.error) {
 
               Utils.sendCustom(request, response, 500, this.config.server.customPages.error, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
+            } else {
+              this.logger.log(request, response, () => {
+                Utils.sendError(response, err, request.url);
+              });
+            }
           }
 
         } else {
@@ -165,16 +181,31 @@ const NodeStatic = class {
         }
       });
 
-  } else {
+    } else {
 
-    // handle serving and logging
-    request.addListener('end', () => {
+      // handle serving and logging
+      request.addListener('end', () => {
 
-      this.fileServer.serve(request, response, (err /*, result*/ ) => {
+        this.fileServer.serve(request, response, (err /*, result*/ ) => {
 
-        if (this.logger) {
-          this.logger.log(request, response, () => {
-            // There was an error serving the file
+          if (this.logger) {
+            this.logger.log(request, response, () => {
+              // There was an error serving the file
+              if (err) {
+
+                if (err.status === 404) {
+
+                  //console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
+                  Utils.sendNotFound(response, err, host, request.url);
+
+                } else {
+
+                  //console.error("Error serving " + request.url + " - " + err.message);
+                  Utils.sendError(response, err, request.url);
+                }
+              }
+            });
+          } else {
             if (err) {
 
               if (err.status === 404) {
@@ -188,28 +219,13 @@ const NodeStatic = class {
                 Utils.sendError(response, err, request.url);
               }
             }
-          });
-        } else {
-          if (err) {
-
-            if (err.status === 404) {
-
-              //console.error("Page not found " + request.url + " - " + err.message, host, response.headers);
-              Utils.sendNotFound(response, err, host, request.url);
-
-            } else {
-
-              //console.error("Error serving " + request.url + " - " + err.message);
-              Utils.sendError(response, err, request.url);
-            }
           }
-        }
 
-      });
+        });
 
-    }).resume();
+      }).resume();
+    }
   }
-}
 }
 
 export default NodeStatic;

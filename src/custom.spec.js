@@ -108,14 +108,12 @@ describe('static-auth server', function() {
   });
   it('should get custom 500 page', function(done) {
 
+    // todo
     this.skip();
-
   });
-
 });
 
-// close svr: todo: close both servers
-// gulp hangs otherwise
+
 after(function(done) {
 
   const dataCallback = function(data) {

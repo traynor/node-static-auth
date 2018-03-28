@@ -82,11 +82,7 @@ describe('static-auth server', function() {
   }
   let supportsHttp2 = parseInt(process.versions.node.split('.')[0], 10) >= 9;
   if (config.server.http2 && supportsHttp2) {
-
-    // todo: add http2 test
-    //https://github.com/visionmedia/superagent/issues/980
     it.skip('no http2 support for superagent..');
-    console.log('\x1b[41m', 'browser-sync won\'t work if using HTTP/2, use `gulp no-bs` and test manually with browser', '\x1b[0m');
   } else {
     it('should login via Basic auth and access server', function(done) {
 
