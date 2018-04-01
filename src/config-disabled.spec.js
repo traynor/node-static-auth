@@ -28,7 +28,7 @@ config = {
     },
     customPages: {
       forbidden: 'forbidden.html',
-      notFound: 'notFound.html',
+      notFound: 'not-found.html',
       error: 'error.html'
     }
   },
@@ -64,10 +64,10 @@ before(function(done) {
 });
 
 
-describe('static-auth server', function() {
+describe('static-auth server with logger and auth disabled', function() {
 
 
-  it('should get with logger and auth disabled', function(done) {
+  it('should get home page', function(done) {
 
     request
       .get(`http://localhost:${config.server.ssl.httpListener}/?redirect-2-secured`)

@@ -35,14 +35,14 @@ const Utils = class {
 
     // todo: handle ie not serving small 404 pages
     // https://stackoverflow.com/questions/3970093/include-after-php-404-header-returning-oops-this-link-appears-to-be-broken
-    response.end('<html><body style="text-align:center;"><br>' + err.status + ' Not Found<br><p>Page <b>' + host + url + '</b> was not found on this server</p><p><a href="/">Home</a></p></body></html>');
+    response.end('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="text-align:center;"><br>' + err.status + ' Not Found<br><p>Page <b>' + host + url + '</b> was not found on this server</p><p><a href="/">Home</a></p></body></html>');
   }
 
   static sendError(response, err, url) {
     // Respond to the client
     response.writeHead(err.status, err.headers);
     //logger.log();
-    response.end('<html><body style="text-align:center;"><br>' + err.status + '<br><p>Error serving: "<b>' + url + '</b>"</p><p>' + err.message + '<p><a href="/">Home</a></p></body></html>');
+    response.end('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="text-align:center;"><br>' + err.status + '<br><p>Error serving: "<b>' + url + '</b>"</p><p>' + err.message + '<p><a href="/">Home</a></p></body></html>');
   }
 
   static sendCustom(request, response, type, file, fileServer, log) {

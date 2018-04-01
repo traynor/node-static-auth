@@ -1,0 +1,20 @@
+body {
+    margin: 0 auto;
+    width: 70%;
+}
+
+h1 {
+    color: blue;
+}
+
+.red {
+    color: red;
+}
+
+a {
+	color: blue;
+    display: inline-block;
+    font-size: 18px;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+}

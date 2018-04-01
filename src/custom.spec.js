@@ -29,7 +29,7 @@ config = {
     },
     customPages: {
       forbidden: 'forbidden.html',
-      notFound: 'notFound.html',
+      notFound: 'not-found.html',
       error: 'error.html'
     }
   },
@@ -69,8 +69,7 @@ before(function(done) {
 let forbidden = `<h1 style="color:red;">forbidden</h1>`;
 let notFound = `<h1>404</h1>`;
 
-describe('static-auth server', function() {
-
+describe('static-auth server with custom pages', function() {
 
   it('should get custom forbidden page ', function(done) {
     request
@@ -117,7 +116,7 @@ after(function(done) {
 
   // clean up logs folders
   // need to close fs.stream manually
-  // due to fuse hidden file preventing on some linux
+  // due to fuse hidden file preventing on some linux dist
   logg.close(() => {
     //console.log('logg closed');
     inst.close(() => {
