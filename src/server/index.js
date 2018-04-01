@@ -39,10 +39,14 @@ const NodeStatic = class {
         this.sslOpts = null;
         console.error(err, 'HTTPS certificate error -> fallback to HTTP server');
       }
-
     }
 
     this.supportsHttp2 = Utils.isHttp2Supported();
+
+    if (this.config.server.http2 && !this.supportsHttp2) {
+      console.log('\x1b[41m', 'You have no support for http/2, install Node.js version that supports HTTP/2 to use it', '\x1b[0m');
+      this.config.server.http2 = false;
+    }
 
     if (this.config.server.customPages && this.config.server.http2 && this.supportsHttp2) {
       console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> fallback to built in', '\x1b[0m');
@@ -85,7 +89,7 @@ const NodeStatic = class {
       console.log(`Node-static-auth ${this.config.server.http2 && this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
       // return server instance for closing
       if (this.cb) {
-        this.cb(this.server);
+        this.cb(this.server, this.logger ? this.logger : null);
       }
     });
 

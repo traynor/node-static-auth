@@ -3,8 +3,9 @@ import defaultConfig from './server/default-config';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
+import Utils from './server/utils';
 
-let config, inst;
+let config, inst, logg;
 
 //const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
 const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
@@ -13,10 +14,7 @@ config = {
   nodeStatic: {
     // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     // use path relative to project root, i.e. process.cwd()
-    root: 'example/public',
-    options: {
-      indexFile: 'index.html' || 'index.html'
-    }
+    root: 'example/public'
   },
   // our web server options
   server: {
@@ -42,8 +40,6 @@ config = {
     pass: 'test' || process.env.PASS,
     realm: 'Private' || process.env.REALM
   },
-  // logger file options
-  // todo: enable morgan conf
   logger: {
     use: true, // false disable
     // make sure directory exists first
@@ -59,8 +55,11 @@ before(function(done) {
 
   const NodeStaticAuth2 = require('../lib');
 
-  let custom = new NodeStaticAuth2(config, (svr) => {
+  let custom = new NodeStaticAuth2(config, (svr, log) => {
     inst = svr;
+    // get logger instance to close stream
+    logg = log;
+    console.log('custom test svr running');
     done();
   });
 });
@@ -88,8 +87,8 @@ describe('static-auth server', function() {
   });
   it('should get custom 404 page', function(done) {
 
-    // todo: use Utils
-    let supportsHttp2 = parseInt(process.versions.node.split('.')[0], 10) >= 9;
+    let supportsHttp2 = Utils.isHttp2Supported();
+
     if (config.server.http2 && supportsHttp2) {
       this.skip();
     } else {
@@ -116,12 +115,22 @@ describe('static-auth server', function() {
 
 after(function(done) {
 
-  const dataCallback = function(data) {
-    done();
-  };
-  nrc.run('rm -rf ' + config.logger.folder, {
-    onDone: dataCallback
+  // clean up logs folders
+  // need to close fs.stream manually
+  // due to fuse hidden file preventing on some linux
+  logg.close(() => {
+    //console.log('logg closed');
+    inst.close(() => {
+      //console.log('svr closed');
+      const dataCallback = function(data) {
+        //console.log('done deleting files', data)
+        done();
+      };
+      nrc.run(`rm -rf ${config.logger.folder}`, {
+        onDone: dataCallback,
+        onError: dataCallback,
+        //onData: dataCallback,
+      });
+    });
   });
-
-  inst.close();
-})
+});

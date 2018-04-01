@@ -8,7 +8,7 @@ const mocha = require('gulp-mocha');
 const sourcemaps = require('gulp-sourcemaps');
 const browserSync = require('browser-sync').create();
 
-var cache = new Cache();
+//const cache = new Cache();
 
 const src = './src/**/*.js';
 const dest = 'lib';
@@ -48,6 +48,7 @@ gulp.task('test', ['compile'], function() {
         })
         .once('end', () => {
             //process.exit();
+
         });
     return stream;
 });

@@ -58,10 +58,19 @@ const Logger = class {
 
   log(...args) {
 
+    // make sure we alway use this stream, not some from opts
     let opts = this.config.options;
     opts.stream = this.stream;
     // create and return closure middleware
     return this.morgan(this.config.type, opts)(...args);
+  }
+
+  // method for closing stream, for testing mostly
+  close(cb) {
+    this.stream.end((err)=>{
+      if(err) throw err;
+      return cb();
+    });
   }
 }
 

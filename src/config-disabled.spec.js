@@ -13,10 +13,7 @@ config = {
   nodeStatic: {
     // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     // use path relative to project root, i.e. process.cwd()
-    root: 'example/public',
-    options: {
-      indexFile: 'index.html' || 'index.html'
-    }
+    root: 'example/public'
   },
   // our web server options
   server: {

@@ -3,8 +3,9 @@ import defaultConfig from './server/default-config';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
+import Utils from './server/utils';
 
-let config, inst;
+let config, inst, logg;
 
 //const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
 const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
@@ -13,10 +14,7 @@ config = {
   nodeStatic: {
     // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     // use path relative to project root, i.e. process.cwd()
-    root: 'example/public',
-    options: {
-      indexFile: 'index.html' || 'index.html'
-    }
+    root: 'example/public'
   },
   // our web server options
   server: {
@@ -53,9 +51,11 @@ before(function(done) {
 
   const NodeStaticAuth = require('../lib');
 
-  let nodeStaticAuth = new NodeStaticAuth(config, (svr) => {
+  let nodeStaticAuth = new NodeStaticAuth(config, (svr, log) => {
     inst = svr;
-    console.log('test svr running');
+    // get logger instance to close stream
+    logg = log;
+    console.log('integ test svr running');
     done();
   });
 });
@@ -80,7 +80,9 @@ describe('static-auth server', function() {
   } else {
     it.skip('serving plain http, so skipping http->https redirect')
   }
-  let supportsHttp2 = parseInt(process.versions.node.split('.')[0], 10) >= 9;
+
+  let supportsHttp2 = Utils.isHttp2Supported();
+
   if (config.server.http2 && supportsHttp2) {
     it.skip('no http2 support for superagent..');
   } else {
@@ -183,15 +185,25 @@ describe('static-auth server', function() {
   });
 });
 
-// close svr: todo: close both servers
-// gulp hangs otherwise
+
 after(function(done) {
 
-  const dataCallback = function(data) {
-    done();
-  };
-  nrc.run('rm -rf ' + config.logger.folder, {
-    onDone: dataCallback
+  // clean up logs folders
+  // need to close fs.stream manually
+  // due to fuse hidden file preventing on some linux dist
+  logg.close(() => {
+    //console.log('logg closed');
+    inst.close(() => {
+      //console.log('svr closed');
+      const dataCallback = function(data) {
+        //console.log('done deleting files', data)
+        done();
+      };
+      nrc.run(`rm -rf ${config.logger.folder}`, {
+        onDone: dataCallback,
+        onError: dataCallback,
+        //onData: dataCallback,
+      });
+    });
   });
-  inst.close();
-})
+});
