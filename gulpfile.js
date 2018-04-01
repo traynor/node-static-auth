@@ -3,7 +3,7 @@ const gulp = require('gulp');
 const nodemon = require('gulp-nodemon');
 const babel = require('gulp-babel');
 const eslint = require('gulp-eslint');
-const Cache = require('gulp-file-cache');
+//const Cache = require('gulp-file-cache');
 const mocha = require('gulp-mocha');
 const sourcemaps = require('gulp-sourcemaps');
 const browserSync = require('browser-sync').create();
@@ -32,8 +32,8 @@ gulp.task('compile', ['lint'], function() {
             sourceRoot: '../src'
         }))
         //.pipe(cache.cache()) // cache them
-        .pipe(gulp.dest(dest)) // write them
-    return stream // important for gulp-nodemon to wait for completion
+        .pipe(gulp.dest(dest)); // write them
+    return stream; // important for gulp-nodemon to wait for completion
 });
 
 gulp.task('test', ['compile'], function() {
@@ -84,7 +84,7 @@ gulp.task('server', ['test'], function() {
         });
 
     return stream;
-})
+});
 
 gulp.task('browser-sync', ['server'], function() {
 
@@ -95,7 +95,7 @@ gulp.task('browser-sync', ['server'], function() {
     browserSync.init({
         port: 3003,
         // todo: const
-        proxy: "https://localhost:3001",
+        proxy: 'https://localhost:3001',
         browser: 'firefox',
         ui: {
             port: 8080
@@ -104,6 +104,6 @@ gulp.task('browser-sync', ['server'], function() {
     });
 });
 
-gulp.task('no-bs', ['server'], function() {});
+gulp.task('no-bs', ['server']);
 
 gulp.task('default', ['browser-sync']);

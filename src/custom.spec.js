@@ -66,7 +66,7 @@ before(function(done) {
 
 
 // todo: read content
-let forbidden = `<h1 style="color:red;">forbidden</h1>`;
+let forbidden = `<h1 style="color:red;">Forbidden</h1>`;
 let notFound = `<h1>404</h1>`;
 
 describe('static-auth server with custom pages', function() {
