@@ -1,5 +1,4 @@
 import assert from 'better-assert';
-import defaultConfig from './server/default-config';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
@@ -7,8 +6,7 @@ import Utils from './server/utils';
 
 let config, inst, logg;
 
-//const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
-const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
+const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
@@ -36,9 +34,9 @@ config = {
   // basic auth credentials
   auth: {
     enabled: true, // false disable
-    name: 'test' || process.env.NAME,
-    pass: 'test' || process.env.PASS,
-    realm: 'Private' || process.env.REALM
+    name: 'test',
+    pass: 'test',
+    realm: 'Private'
   },
   logger: {
     use: true, // false disable
@@ -93,7 +91,7 @@ describe('static-auth server with custom pages', function() {
     } else {
       request
         .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/no-page-here`)
-        .auth('test', 'test', {
+        .auth(config.auth.name, config.auth.pass, {
           type: 'auto'
         })
         .ca(cert)

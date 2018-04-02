@@ -2,25 +2,26 @@ const NodeStaticAuth = require('../../lib');
 
 console.log('>>example go');
 const config = {
+    // set static server
+    // https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     nodeStatic: {
-        // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
-        // use path relative to project root, i.e. process.cwd()
+        // use path relative to project root, i.e. `process.cwd()`
         root: 'example/public',
+        // pass the native opts for node-static here
         options: {
             indexFile: 'index.html'
         }
     },
-    // our web server options
+    // set web server options
     server: {
         port: 3001,
         // `ExperimentalWarning: The http2 module is an experimental API.`
-        // browser-sync proxy no http/2
-        // https://github.com/BrowserSync/browser-sync/issues/1338
-        http2: false,
+        http2: false, // set `true` to enable, disables custom pages if set
         ssl: {
-            enabled: true,
-            httpListener: 3000,
+            enabled: true, // set `false` to disable
+            httpListener: 3000, // set HTTP listener for HTTP->HTTPS redirect
             // enter path to certificate relative to project root
+            // note that if reading certificate fails it will fallback to http server
             /**
              * these are some bogus certificates for testing
              * create self-signed localhost testing certificate that expires in 10 years:
@@ -29,32 +30,41 @@ const config = {
             key: 'example/server/localhost-test-privkey.pem',
             cert: 'example/server/localhost-test-cert.pem'
         },
+        // set your custom pages here to be served on 401, 404 and 500
+        // relative to `root` property
+        // NOTE: you cannot use them with HTTP2, it will
+        // fallback to default pages (not so pretty)
         customPages: {
             forbidden: 'forbidden.html',
             notFound: 'not-found.html',
             error: 'error.html'
         }
     },
-    // basic auth credentials
+    // set basic auth credentials
     auth: {
         enabled: true, // set `false` to disable
-        name: 'test' || process.env.NAME,
-        pass: 'test' || process.env.PASS,
-        realm: 'Private' || process.env.REALM
+        name: process.env.NAME,
+        pass: process.env.PASS,
+        realm: process.env.REALM
     },
-    // logger file options
+    // set logger file options
     logger: {
-        use: true, // false disable
-        // make sure directory exists first, if using one
+        use: true, // set `false` to disable
+        // directory will be created if it doesn't exist
+        // use path relative to project root, i.e. `process.cwd()`
         filename: 'access.log',
-        folder: 'example/server/logs',
+        folder: 'example/server/logs', // here is path relative to this project
+        // setup log rotation: https://registry.npmjs.org/rotating-file-stream
         logRotation: {
             use: false,
+            // pass the native opts for rfs here
             options: {}
         },
+        // pass the native opts for morgan here
         type: 'combined',
         options: {}
     }
-}
+};
 
+// start the server
 const server = new NodeStaticAuth(config);

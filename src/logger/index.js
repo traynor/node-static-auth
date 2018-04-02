@@ -67,8 +67,8 @@ const Logger = class {
 
   // method for closing stream, for testing mostly
   close(cb) {
-    this.stream.end((err)=>{
-      if(err) throw err;
+    this.stream.end((err) => {
+      if (err) throw err;
       return cb();
     });
   }

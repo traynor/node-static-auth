@@ -1,5 +1,4 @@
 import assert from 'better-assert';
-import defaultConfig from './server/default-config';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
@@ -7,8 +6,7 @@ import Utils from './server/utils';
 
 let config, inst;
 
-//const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
-const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
+const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
@@ -30,15 +28,14 @@ config = {
   },
   // basic auth credentials
   auth: {
-    enabled: true, // false disable
-    name: 'test' || process.env.NAME,
-    pass: 'test' || process.env.PASS,
-    realm: 'Private' || process.env.REALM
+    enabled: true,
+    name: 'test',
+    pass: 'test',
+    realm: 'Private'
   },
   // logger file options
   logger: {
-    use: true, // false disable
-    // make sure directory exists first
+    use: true,
     filename: 'http2-test-access.log',
     folder: 'example/server/http2-logs2',
     type: 'combined'
@@ -52,7 +49,7 @@ if (!Utils.isHttp2Supported()) {
   });
 
 } else {
-  
+
   // load http2 here
   const http2 = require('http2');
 

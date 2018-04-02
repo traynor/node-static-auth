@@ -1,14 +1,13 @@
 import assert from 'better-assert';
-import defaultConfig from './server/default-config';
 import fs from 'fs';
+import NodeStaticAuth from '../lib';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
 import Utils from './server/utils';
 
 let config, inst, logg;
 
-//const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
-const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
+const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
@@ -49,7 +48,7 @@ config = {
 before(function(done) {
   // runs before all tests in this block
 
-  const NodeStaticAuth = require('../lib');
+
 
   let nodeStaticAuth = new NodeStaticAuth(config, (svr, log) => {
     inst = svr;
@@ -64,6 +63,16 @@ let logs = [];
 
 describe('static-auth server', function() {
 
+  it('should not instantiate without config', function(done) {
+
+    try {
+      let noConf = new NodeStaticAuth({});
+    } catch (err) {
+      assert(err.message.includes('Config is mandatory') === true);
+      done();
+    }
+
+  });
   if (config.server.ssl.enabled) {
     it('should have http listener that redirects to https', function(done) {
 
@@ -90,7 +99,7 @@ describe('static-auth server', function() {
 
       request
         .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/?successful-login`)
-        .auth('test', 'test', {
+        .auth(config.auth.name, config.auth.pass, {
           type: 'auto'
         })
         .ca(cert)
@@ -104,7 +113,7 @@ describe('static-auth server', function() {
 
       request
         .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/css.css`)
-        .auth('test', 'test', {
+        .auth(config.auth.name, config.auth.pass, {
           type: 'auto'
         })
         .ca(cert)
@@ -140,7 +149,7 @@ describe('static-auth server', function() {
     } else {
       request
         .get(`${config.server.ssl.enabled ? 'https://' : 'http://'}localhost:${config.server.port}/no-page-here`)
-        .auth('test', 'test', {
+        .auth(config.auth.name, config.auth.pass, {
           type: 'auto'
         })
         .ca(cert)

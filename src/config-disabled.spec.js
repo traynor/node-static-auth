@@ -1,13 +1,11 @@
 import assert from 'better-assert';
-import defaultConfig from './server/default-config';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
 
 let config, inst;
 
-//const key = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.key);
-const cert = fs.readFileSync(__dirname + '/../' + defaultConfig.server.ssl.cert);
+const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
@@ -34,16 +32,11 @@ config = {
   },
   // basic auth credentials
   auth: {
-    enabled: false, // false disable
-    name: 'test' || process.env.NAME,
-    pass: 'test' || process.env.PASS,
-    realm: 'Private' || process.env.REALM
+    enabled: false,
   },
   // logger file options
-  // todo: enable morgan conf
   logger: {
-    use: false, // false disable
-    // make sure directory exists first
+    use: false,
     filename: 'disabled-access.log',
     folder: 'example/server/dlogs',
     type: 'combined',

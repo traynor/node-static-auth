@@ -13,9 +13,20 @@ const NodeStatic = class {
 
   constructor(inputConfig, cb = null) {
 
-    // overwrite default confs with input
-    this.config = Utils.mergeDeep(defaultConfig, inputConfig);
-    //this.config = Object.assign(defaultConfig, inputConfig);
+    // validate input, we must have some config
+    if (!inputConfig || !Object.keys(inputConfig).length) {
+      //this.config = defaultConfig;
+      throw new Error('Config is mandatory');
+    } else {
+      // check if credentials are not set right
+      if (inputConfig.auth) {
+        if (inputConfig.auth.use && (!inputConfig.auth.name || !inputConfig.auth.pass)) {
+          throw new Error('Basic auth not configured correctly');
+        }
+      }
+      // overwrite default confs with input
+      this.config = Utils.mergeDeep(defaultConfig, inputConfig);
+    }
 
     this.cb = cb;
 
@@ -35,9 +46,9 @@ const NodeStatic = class {
           cert: fs.readFileSync(path.resolve(this.config.server.ssl.cert))
         };
       } catch (err) {
-        //throw new Error('HTTPS certificate error', err);
-        this.sslOpts = null;
-        console.error(err, 'HTTPS certificate error -> fallback to HTTP server');
+        throw new Error(`HTTPS certificate error:\n${err}`);
+        //console.error(err, 'HTTPS certificate error -> fallback to HTTP server');
+        //this.sslOpts = null;
       }
     }
 
