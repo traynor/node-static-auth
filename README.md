@@ -106,7 +106,6 @@ const config = {
             enabled: true, // set `false` to disable
             httpListener: 3000, // set HTTP listener for HTTP->HTTPS redirect
             // enter path to certificate relative to project root
-            // note that if reading certificate fails it will fallback to HTTP server
             key: 'path-to-your-privkey',
             cert: 'path-to-your-cert'
         }
