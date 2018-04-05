@@ -2,7 +2,7 @@
   "name": "node-static-auth",
   "version": "1.0.0",
   "description": "Node.js static server with Basic auth and access file logging, HTTPS support and custom error pages",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "gulp test",
     "start": "node example/server"
