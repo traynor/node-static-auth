@@ -1,6 +1,6 @@
 {
   "name": "node-static-auth",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Node.js static server with Basic auth and access file logging, HTTPS support and custom error pages",
   "main": "lib/index.js",
   "scripts": {
