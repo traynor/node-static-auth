@@ -7,21 +7,21 @@ Serve static files with Basic auth protection and access file logging service on
 - `HTTPS` support with `HTTP` server listener for `HTTP`->`HTTPS` redirect
 - `Basic auth` protection
 - access log file with log file rotation option
-- serve your custom error pages (401, 404, 500), defaults to built-in ones
+- serve your custom error pages (401, 404, 500), defaults to built-in ones (not so pretty)
 - pass native config to [`node-static`](https://www.npmjs.com/package/node-static), [`morgan`](https://www.npmjs.com/package/morgan) and [`rotating-file-stream`](https://npmjs.com/package/rotating-file-stream) modules
 - disable/enable/customize features
 
 ___Note about HTTP2___
 
-You must install node `>= 9.x` to use it.
+You must install node `>= 9.x` to use it, but it's only plain ole server listening on a port, so you won't get the whole nine yards, and other used modules don't really support it yet, but still.
 
-There could probably be some bugs due to its experimental status, and no support from other used modules, so they're going to be dealt with in time.
+Also, there could probably be some bugs due to its experimental status, and in combination with other modules, so they're going to be dealt with in time.
 
 # Under the hood
 
-It bundles [`node-static`](https://www.npmjs.com/package/node-static) [`basic-auth`](https://www.npmjs.com/package/basic-auth), [`morgan`](https://www.npmjs.com/package/morgan) and [`rotating-file-stream`](https://npmjs.com/package/rotating-file-stream) modules on top of Node.js built-in `HTTP`, `HTTP2`server, as well as `HTTPS` server. It extends static server with error pages handler with custom error pages handler option.
+It bundles [`node-static`](https://www.npmjs.com/package/node-static) [`basic-auth`](https://www.npmjs.com/package/basic-auth), [`morgan`](https://www.npmjs.com/package/morgan) and [`rotating-file-stream`](https://npmjs.com/package/rotating-file-stream) modules on top of Node.js built-in `HTTP`, `HTTP2` as well as `HTTPS` server. It extends static server with error pages handler with custom error pages handler option.
 
-You can pass the same config/options for each module, as you would normaly do (except for creating write stream with `morgan`).
+You can pass the same config/options for each module, as you would normally do (except for creating write stream with `morgan`).
 
 
 # Usage
@@ -29,7 +29,7 @@ You can pass the same config/options for each module, as you would normaly do (e
 - __Install:__
 
 ```bash
-npm i -S node-static-auth
+npm i node-static-auth
 ```
 
 - __Load module__
@@ -40,9 +40,9 @@ const NodeStaticAuth = require('node-static-auth');
 
 - __Setup config__
 
-Usage consists of setting up config object and passing it to `node-static-auth` instance.
+You setup config depending on what features you want.
 
-There are 4 main settings areas/properties in config object you set up, according to what features you want:
+There are 4 main settings areas/properties in config object you must set up:
 
 ```js
 const config = {
@@ -60,22 +60,41 @@ const config = {
 	}
 }
 ```
+Read the example below to see options, or go right at it here: [example](example/app.js).
+
+- __start the server__
+
+Pass config to server instance to start the server:
+
+```js
+// start the server
+const server = new NodeStaticAuth(config);
+```
 
 # Example
 
-## HTTP/2 static server with HTTPS, logger and basic auth
+### Create HTTPS static server with access log file and Basic auth protection:
 
 ```js
 const NodeStaticAuth = require('node-static-auth');
 
 const config = {
     // set static server
+    // you can pass opts you'd usually pass to `node-static`
     nodeStatic: {
         // use path relative to project root, i.e. `process.cwd()`
-        root: 'path-to-public-directory',
-        // pass the native opts for node-static here
+        root: 'path-to-public-directory',        
         options: {
-            indexFile: 'index.html'
+            indexFile: 'your-index.html'
+        },
+        // set your custom pages here to be served on 401, 404 and 500
+        // relative to `nodeStatic.root` property, i.e. your public folder
+        // NOTE: you cannot use them with HTTP2 for now, it will
+        // fallback to default pages (less pretty)
+        customPages: {
+            forbidden: 'your-forbidden.html',
+            notFound: 'your-not-found.html',
+            error: 'your-error.html'
         }
     },
     // set web server options
@@ -90,15 +109,6 @@ const config = {
             // note that if reading certificate fails it will fallback to HTTP server
             key: 'path-to-your-privkey',
             cert: 'path-to-your-cert'
-        },
-        // set your custom pages here to be served on 401, 404 and 500
-        // relative to `root` property
-        // NOTE: you cannot use them with HTTP2 for now, it will
-        // fallback to default pages (not so pretty)
-        customPages: {
-            forbidden: 'forbidden.html',
-            notFound: 'not-found.html',
-            error: 'error.html'
         }
     },
     // set basic auth credentials
@@ -111,17 +121,17 @@ const config = {
     // set logger file options
     logger: {
         use: true, // set `false` to disable
-        // directory will be created if it doesn't exist
+        // NOTE: directory will be created if it doesn't exist
         // use path relative to project root, i.e. `process.cwd()`
         filename: 'access.log',
         folder: 'path-to-logs-directory',
-        // setup log rotation: https://registry.npmjs.org/rotating-file-stream
+        // setup log rotation: `https://www.npmjs.com/package/rotating-file-stream`
         logRotation: {
             use: false, // set `true` to enable
-            // pass the native opts for rfs here
+            // pass the native opts for `rfs` here
             options: {}
         },
-        // pass the native opts for morgan here
+        // pass the native opts for `morgan` https://www.npmjs.com/package/morgan
         type: 'combined',        
         options: {}
     }
@@ -133,34 +143,58 @@ const server = new NodeStaticAuth(config);
 
 Or inspect it here: [example](example/app.js).
 
-Also, check out [test files (.spec.js)](src/) for more combinations.
+You can configure it based on your needs, like adding log rotation, disabling logger or whatever.
 
 ___NOTE___:
 
-If you omit some settings, it may fallback to [default config](src/server/default-config.js), similar to ones in the example above.
+If you omit some main settings, it will fallback to [default config](src/server/default-config.js), similar to ones in the example above.
 
+Also, check out [test files (.spec.js)](src/) for more combinations.
 
-## run example locally
+## Run example locally
+
 ```bash
 npm i
 npm start
 ```
+For demo purposes, you can login with `test/test`, or you can setup basic auth yourself and start accordingly:
 
-## test
+```js
+    // set basic auth credentials
+    auth: {
+        enabled: true, // set `false` to disable
+        name: 'test' || process.env.NAME,
+        pass: 'test' || process.env.PASS,
+        realm: 'Restricted content' || process.env.REALM
+    },
+```
+or with using your own user:
+
+ (i.e. example above):
+```bash
+npm i
+NAME=your_name PASS=your_pass npm start
+```
+
+## Test
 ```bash
 npm i
 gulp test
 ```
 
-## develop
+## Develop
+
+- if you have http/2 support (node.js `>=9.x`), `browser-sync` won't work very well with http/2 so you need to test manually in that case, so run:
+
 ```bash
 npm i
-# to test without http/2:
-gulp
-# to test with http/2:
-# browser-sync doesn't work well with http/2 so you need
-# to test manually in that case, and run:
 gulp no-bs
+```
+otherwise, just run:
+
+```bash
+npm i
+gulp
 ```
 
 # TODO
