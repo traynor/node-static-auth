@@ -1,17 +1,26 @@
 import assert from 'better-assert';
 import fs from 'fs';
-import nrc from 'node-run-cmd';
 import request from 'superagent';
 
+/**
+ * Features set as disabled tests
+ *
+ */
 let config, inst;
 
+// eslint-disable-next-line no-sync
 const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
     // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     // use path relative to project root, i.e. process.cwd()
-    root: 'example/public'
+    root: 'example/public',
+    customPages: {
+      forbidden: 'forbidden.html',
+      notFound: 'not-found.html',
+      error: 'error.html'
+    }
   },
   // our web server options
   server: {
@@ -23,16 +32,11 @@ config = {
       // enter path relative to project root
       key: 'example/server/localhost-test-privkey.pem',
       cert: 'example/server/localhost-test-cert.pem'
-    },
-    customPages: {
-      forbidden: 'forbidden.html',
-      notFound: 'not-found.html',
-      error: 'error.html'
     }
   },
   // basic auth credentials
   auth: {
-    enabled: false,
+    enabled: false
   },
   // logger file options
   logger: {
@@ -47,9 +51,9 @@ config = {
 
 before(function(done) {
   // runs before all tests in this block
-
   const NodeStaticAuth3 = require('../lib');
 
+  // eslint-disable-next-line no-unused-vars
   let disabled = new NodeStaticAuth3(config, (svr) => {
     inst = svr;
     done();

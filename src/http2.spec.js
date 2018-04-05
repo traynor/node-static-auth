@@ -1,11 +1,17 @@
+import Utils from './server/utils';
 import assert from 'better-assert';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
-import request from 'superagent';
-import Utils from './server/utils';
+
 
 let config, inst;
 
+/**
+ * http2 server tests
+ *
+ */
+
+// eslint-disable-next-line no-sync
 const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
@@ -58,6 +64,7 @@ if (!Utils.isHttp2Supported()) {
 
     const NodeStaticAuth = require('../lib');
 
+    // eslint-disable-next-line no-unused-vars
     let nodeStaticAuth = new NodeStaticAuth(config, (svr) => {
       inst = svr;
       console.log('http2 svr running');
@@ -88,7 +95,7 @@ if (!Utils.isHttp2Supported()) {
 
       const req = client.request(headers);
 
-      req.on('response', (headers, flags) => {
+      req.on('response', (headers) => {
 
         status = headers[':status'];
       });
@@ -123,7 +130,7 @@ if (!Utils.isHttp2Supported()) {
 
       const req = client.request(headers);
 
-      req.on('response', (headers, flags) => {
+      req.on('response', (headers) => {
 
         status = headers[':status'];
       });
@@ -157,7 +164,7 @@ if (!Utils.isHttp2Supported()) {
 
       const req = client.request(headers);
 
-      req.on('response', (headers, flags) => {
+      req.on('response', (headers) => {
 
         status = headers[':status'];
       });
@@ -190,7 +197,7 @@ if (!Utils.isHttp2Supported()) {
 
       const req = client.request(headers);
 
-      req.on('response', (headers, flags) => {
+      req.on('response', (headers) => {
 
         status = headers[':status'];
       });

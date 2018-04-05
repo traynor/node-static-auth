@@ -9,8 +9,17 @@ import nodeStatic from 'node-static';
 import path from 'path';
 
 
+/**
+ * NodeStatic module
+ *
+ */
 const NodeStatic = class {
 
+  /**
+   * init server instance
+   * @param  {Object}   inputConfig
+   * @param  {Function} cb for testing mostly
+   */
   constructor(inputConfig, cb = null) {
 
     // validate input, we must have some config
@@ -20,7 +29,8 @@ const NodeStatic = class {
     } else {
       // check if credentials are not set right
       if (inputConfig.auth) {
-        if (inputConfig.auth.use && (!inputConfig.auth.name || !inputConfig.auth.pass)) {
+
+        if (inputConfig.auth.enabled && (!inputConfig.auth.name || !inputConfig.auth.pass)) {
           throw new Error('Basic auth not configured correctly');
         }
       }
@@ -42,7 +52,9 @@ const NodeStatic = class {
 
       try {
         this.sslOpts = {
+          // eslint-disable-next-line no-sync
           key: fs.readFileSync(path.resolve(this.config.server.ssl.key)),
+          // eslint-disable-next-line no-sync
           cert: fs.readFileSync(path.resolve(this.config.server.ssl.cert))
         };
       } catch (err) {
@@ -54,15 +66,18 @@ const NodeStatic = class {
 
     this.supportsHttp2 = Utils.isHttp2Supported();
 
+    // warn if http2 is set, but not supported
     if (this.config.server.http2 && !this.supportsHttp2) {
       console.log('\x1b[41m', 'You have no support for http/2, install Node.js version that supports HTTP/2 to use it', '\x1b[0m');
       this.config.server.http2 = false;
     }
 
-    if (this.config.server.customPages && this.config.server.http2 && this.supportsHttp2) {
+    // warn about no support
+    if (this.config.nodeStatic.customPages && this.config.server.http2 && this.supportsHttp2) {
       console.log('\x1b[41m', 'cannot use custom err pages with HTTP/2 -> fallback to built in', '\x1b[0m');
     }
 
+    // start `node-static` and light up server
     this.fileServer = new nodeStatic.Server(this.config.nodeStatic.root, this.config.nodeStatic.options);
 
     if (this.config.server.http2 && this.supportsHttp2) {
@@ -76,6 +91,10 @@ const NodeStatic = class {
 
   }
 
+  /**
+   * method that starts up server
+   * @param  {Boolean} http2 triggers h2 usage
+   */
   createServer(http2 = false) {
 
     if (http2) {
@@ -83,28 +102,31 @@ const NodeStatic = class {
       // todo: handle 'import' and 'export' may only appear at the top level
       const http2 = require('http2');
 
-      // need to bind `this` to listener method
+      // need to bind `this` to listener method for preserving scope
+      // eslint-disable-next-line no-unused-expressions
       this.sslOpts ? this.server = http2.createSecureServer(this.sslOpts, this.listener.bind(this)) : this.server = http2.createServer(this.listener.bind(this));
     } else {
 
       // todo: handle 'import' and 'export' may only appear at the top level
       const https = require('https');
 
+      // need to bind `this` to listener method for preserving scope
+      // eslint-disable-next-line no-unused-expressions
       this.sslOpts ? this.server = https.createServer(this.sslOpts, this.listener.bind(this)) : this.server = http.createServer(this.listener.bind(this));
     }
 
-
+    // init server
     this.server.listen(this.config.server.port, () => {
       console.log(`Using Basic auth protection: ${this.config.auth.enabled ? 'Yes' : 'No'}`);
       console.log('HTTP/2 supported?', this.supportsHttp2 ? 'Yes' : 'No');
       console.log(`Node-static-auth ${this.config.server.http2 && this.supportsHttp2 ? 'HTTP/2 ' : ''}${this.sslOpts ? 'secure ' : 'unsecure '}server running on port ${this.config.server.port}`);
-      // return server instance for closing
+      // return server instance for closing for testing
       if (this.cb) {
         this.cb(this.server, this.logger ? this.logger : null);
       }
     });
 
-    // create listener to redirect from http port 80 to https
+    // create listener to redirect from http to https
     if (this.sslOpts) {
 
       http.createServer((request, response) => {
@@ -121,10 +143,14 @@ const NodeStatic = class {
     }
   }
 
+  /**
+   * method that coordinates request/responses between modules
+   * @param  {Object} request
+   * @param  {Object} response
+   */
   listener(request, response) {
 
-
-    // ignore favicon request earyl
+    // ignore favicon request early
     if (request.url === '/favicon.ico') {
 
       return false;
@@ -140,9 +166,10 @@ const NodeStatic = class {
 
       const credentials = auth(request);
 
+      // check all svr-logger-custom combinations...
       if (!credentials || credentials.name !== this.config.auth.name || credentials.pass !== this.config.auth.pass) {
-        if (this.config.server.customPages && this.config.server.customPages.forbidden && !this.config.server.http2) {
-          Utils.sendCustom(request, response, 401, this.config.server.customPages.forbidden, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
+        if (this.config.nodeStatic.customPages && this.config.nodeStatic.customPages.forbidden && !this.config.server.http2) {
+          Utils.sendCustom(request, response, 401, this.config.nodeStatic.customPages.forbidden, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '', this.config.auth.realm);
         } else {
           if (this.logger) {
             this.logger.log(request, response, () => {
@@ -156,11 +183,11 @@ const NodeStatic = class {
       }
     }
 
-    // if custom pages, pass data for custom render
-    // check which custom page later
-    if (this.config.server.customPages && !this.config.server.http2) {
+    // if custom pages, data and logger
+    // check which custom page is set later
+    if (this.config.nodeStatic.customPages && !this.config.server.http2) {
 
-      this.fileServer.serve(request, response, (err /*, result*/ ) => {
+      this.fileServer.serve(request, response, (err/*, result*/) => {
 
         // handle custom pages, log and finish response there
         if (err) {
@@ -168,8 +195,8 @@ const NodeStatic = class {
           if (err.status === 404) {
 
             // check if custom err page, else use default
-            if (this.config.server.customPages.notFound) {
-              Utils.sendCustom(request, response, 404, this.config.server.customPages.notFound, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
+            if (this.config.nodeStatic.customPages.notFound) {
+              Utils.sendCustom(request, response, 404, this.config.nodeStatic.customPages.notFound, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
             } else {
               this.logger.log(request, response, () => {
                 Utils.sendNotFound(response, err, host, request.url);
@@ -178,9 +205,9 @@ const NodeStatic = class {
 
           } else {
 
-            if (this.config.server.customPages.error) {
+            if (this.config.nodeStatic.customPages.error) {
 
-              Utils.sendCustom(request, response, 500, this.config.server.customPages.error, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
+              Utils.sendCustom(request, response, 500, this.config.nodeStatic.customPages.error, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
             } else {
               this.logger.log(request, response, () => {
                 Utils.sendError(response, err, request.url);
@@ -201,7 +228,7 @@ const NodeStatic = class {
       // handle serving and logging
       request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, (err /*, result*/ ) => {
+        this.fileServer.serve(request, response, (err/*, result*/) => {
 
           if (this.logger) {
             this.logger.log(request, response, () => {

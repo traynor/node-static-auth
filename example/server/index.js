@@ -10,6 +10,15 @@ const config = {
         // pass the native opts for node-static here
         options: {
             indexFile: 'index.html'
+        },
+        // set your custom pages here to be served on 401, 404 and 500
+        // relative to `root` property
+        // NOTE: you cannot use them with HTTP2, it will
+        // fallback to default pages (less pretty)
+        customPages: {
+            forbidden: 'forbidden.html',
+            notFound: 'not-found.html',
+            error: 'error.html'
         }
     },
     // set web server options
@@ -29,23 +38,14 @@ const config = {
              */
             key: 'example/server/localhost-test-privkey.pem',
             cert: 'example/server/localhost-test-cert.pem'
-        },
-        // set your custom pages here to be served on 401, 404 and 500
-        // relative to `root` property
-        // NOTE: you cannot use them with HTTP2, it will
-        // fallback to default pages (not so pretty)
-        customPages: {
-            forbidden: 'forbidden.html',
-            notFound: 'not-found.html',
-            error: 'error.html'
         }
     },
     // set basic auth credentials
     auth: {
         enabled: true, // set `false` to disable
-        name: process.env.NAME,
-        pass: process.env.PASS,
-        realm: process.env.REALM
+        name: process.env.NAME || 'test',
+        pass: process.env.PASS || 'test',
+        realm: process.env.REALM || 'Restricted content'
     },
     // set logger file options
     logger: {
@@ -54,13 +54,14 @@ const config = {
         // use path relative to project root, i.e. `process.cwd()`
         filename: 'access.log',
         folder: 'example/server/logs', // here is path relative to this project
-        // setup log rotation: https://registry.npmjs.org/rotating-file-stream
+        // setup log rotation: `https://www.npmjs.com/package/rotating-file-stream`
+        // logs will be created within given folder
         logRotation: {
             use: false,
-            // pass the native opts for rfs here
+            // pass the native opts for `rfs` here
             options: {}
         },
-        // pass the native opts for morgan here
+        // pass the native opts for `morgan` https://www.npmjs.com/package/morgan
         type: 'combined',
         options: {}
     }

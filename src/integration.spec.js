@@ -1,12 +1,19 @@
+import NodeStaticAuth from '../lib';
+import Utils from './server/utils';
 import assert from 'better-assert';
 import fs from 'fs';
-import NodeStaticAuth from '../lib';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
-import Utils from './server/utils';
+
 
 let config, inst, logg;
 
+/**
+ * Integration tests
+ *
+ */
+
+// eslint-disable-next-line no-sync
 const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
@@ -29,6 +36,7 @@ config = {
   },
   // basic auth credentials
   auth: {
+    // hardcode credentials for testing
     enabled: true, // false disable
     name: 'test' || process.env.NAME,
     pass: 'test' || process.env.PASS,
@@ -47,8 +55,6 @@ config = {
 
 before(function(done) {
   // runs before all tests in this block
-
-
 
   let nodeStaticAuth = new NodeStaticAuth(config, (svr, log) => {
     inst = svr;
@@ -210,7 +216,7 @@ after(function(done) {
       };
       nrc.run(`rm -rf ${config.logger.folder}`, {
         onDone: dataCallback,
-        onError: dataCallback,
+        onError: dataCallback
         //onData: dataCallback,
       });
     });

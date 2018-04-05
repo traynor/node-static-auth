@@ -90,11 +90,10 @@ gulp.task('browser-sync', ['server'], function() {
 
     //https://github.com/visionmedia/superagent/issues/980
     if (parseInt(process.versions.node.split('.')[0], 10) >= 9) {
-        console.log('\x1b[41m', 'browser-sync won\'t work if using HTTP/2, so use `gulp no-bs` and test manually', '\x1b[0m');
+        console.log('\x1b[41m', 'browser-sync won\'t work if you run `gulp` with HTTP/2 enabled, so use `gulp no-bs` and test manually', '\x1b[0m');
     }
     browserSync.init({
         port: 3003,
-        // todo: const
         proxy: 'https://localhost:3001',
         browser: 'firefox',
         ui: {

@@ -1,18 +1,30 @@
+import Utils from './server/utils';
 import assert from 'better-assert';
 import fs from 'fs';
 import nrc from 'node-run-cmd';
 import request from 'superagent';
-import Utils from './server/utils';
+
 
 let config, inst, logg;
 
+/**
+ * custom error pages tests
+ *
+ */
+
+// eslint-disable-next-line no-sync
 const cert = fs.readFileSync(`${__dirname}/../example/server/localhost-test-cert.pem`);
 
 config = {
   nodeStatic: {
     // all available node-static options https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
     // use path relative to project root, i.e. process.cwd()
-    root: 'example/public'
+    root: 'example/public',
+    customPages: {
+      forbidden: 'forbidden.html',
+      notFound: 'not-found.html',
+      error: 'error.html'
+    }
   },
   // our web server options
   server: {
@@ -24,11 +36,6 @@ config = {
       // enter path relative to project root
       key: 'example/server/localhost-test-privkey.pem',
       cert: 'example/server/localhost-test-cert.pem'
-    },
-    customPages: {
-      forbidden: 'forbidden.html',
-      notFound: 'not-found.html',
-      error: 'error.html'
     }
   },
   // basic auth credentials
@@ -53,6 +60,7 @@ before(function(done) {
 
   const NodeStaticAuth2 = require('../lib');
 
+  // eslint-disable-next-line no-unused-vars
   let custom = new NodeStaticAuth2(config, (svr, log) => {
     inst = svr;
     // get logger instance to close stream
@@ -87,6 +95,7 @@ describe('static-auth server with custom pages', function() {
     let supportsHttp2 = Utils.isHttp2Supported();
 
     if (config.server.http2 && supportsHttp2) {
+      // eslint-disable-next-line no-invalid-this
       this.skip();
     } else {
       request
@@ -98,13 +107,14 @@ describe('static-auth server with custom pages', function() {
         .end(function(err, res) {
           assert(res.status === 404);
           assert(res.text.includes(notFound));
+          // eslint-disable-next-line no-unused-vars
           done();
         });
     }
   });
   it('should get custom 500 page', function(done) {
 
-    // todo
+    // eslint-disable-next-line no-unused-vars
     this.skip();
   });
 });
@@ -125,7 +135,7 @@ after(function(done) {
       };
       nrc.run(`rm -rf ${config.logger.folder}`, {
         onDone: dataCallback,
-        onError: dataCallback,
+        onError: dataCallback
         //onData: dataCallback,
       });
     });

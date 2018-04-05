@@ -8,8 +8,16 @@ import path from 'path';
 import rfs from 'rotating-file-stream';
 
 
+/**
+ * Logger service
+ *
+ */
 const Logger = class {
 
+  /**
+   * init logger and file stream
+   * @param  {Object} config paramas to create instance
+   */
   constructor(config) {
 
     this.config = config;
@@ -19,7 +27,7 @@ const Logger = class {
     this.logDirectory = path.normalize(path.resolve(this.config.folder));
 
     // ensure log directory exists
-    existsSync(this.logDirectory) || mkdirSync(this.logDirectory)
+    let checkDir = existsSync(this.logDirectory) || mkdirSync(this.logDirectory)
 
     if (this.config.logRotation.use) {
 
@@ -42,7 +50,6 @@ const Logger = class {
 
     this.morgan = morgan;
 
-
     this.stream.on('error', function(err) {
 
       if (err.code === 'ENOENT') {
@@ -52,23 +59,36 @@ const Logger = class {
 
         console.log('log file stream err', err);
       }
-    });
 
+      throw new Error(`Error creating log file: ${err}`);
+    });
   }
 
+  /**
+   * log method that writes to a file
+   * @param  {...[Object]} args middleware fn
+   * @return {Function} middleware fn
+   */
   log(...args) {
 
-    // make sure we alway use this stream, not some from opts
     let opts = this.config.options;
+    // overwrite to make sure we always use
+    // this stream, not some from opts
     opts.stream = this.stream;
-    // create and return closure middleware
+    // create and return middleware
     return this.morgan(this.config.type, opts)(...args);
   }
 
-  // method for closing stream, for testing mostly
+  /**
+   * method for closing stream, for testing mostly (due to fuse hidden blocking on some Linux)
+   * @param  {Function} cb
+   * @return {Function} cb
+   */
   close(cb) {
     this.stream.end((err) => {
-      if (err) throw err;
+      if (err) {
+        throw new Error(`Error closing stream: ${err}`);
+      }
       return cb();
     });
   }
