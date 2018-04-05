@@ -1,14 +1,31 @@
 {
   "name": "node-static-auth",
   "version": "1.0.0",
-  "description": "",
+  "description": "Node.js static server with Basic auth and access file logging, HTTPS support and custom error pages",
   "main": "index.js",
   "scripts": {
     "test": "gulp test",
     "start": "node example/server"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/traynor/node-static-auth.git"
+  },
+  "keywords": [
+    "http",
+    "https",
+    "static",
+    "file",
+    "logger",
+    "basic",
+    "auth",
+    "middleware"
+  ],
+  "engines": {
+    "node": ">= 0.10.0"
+  },
   "author": "traynor <traynor1@protonmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.1.2",
