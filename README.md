@@ -110,8 +110,8 @@ const config = {
             // enter path to certificate relative to project root
             key: 'path-to-your-privkey',
             cert: 'path-to-your-cert'
-            // NOTE: HTTP2 requires HTTPS, you've got some bogus certs
-            // for localhost in the example, usable for some demo POC
+            // NOTE: browsers require TLS for HTTP2, so you've got some bogus certs
+            // for localhost in the example, usable for some demo, POC etc.
         }
     },
     // set basic auth credentials
