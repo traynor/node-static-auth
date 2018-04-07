@@ -187,7 +187,7 @@ const NodeStatic = class {
     // check which custom page is set later
     if (this.config.nodeStatic.customPages && !this.config.server.http2) {
 
-      this.fileServer.serve(request, response, (err/*, result*/) => {
+      this.fileServer.serve(request, response, (err /*, result*/ ) => {
 
         // handle custom pages, log and finish response there
         if (err) {
@@ -198,9 +198,13 @@ const NodeStatic = class {
             if (this.config.nodeStatic.customPages.notFound) {
               Utils.sendCustom(request, response, 404, this.config.nodeStatic.customPages.notFound, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
             } else {
-              this.logger.log(request, response, () => {
+              if (this.logger) {
+                this.logger.log(request, response, () => {
+                  Utils.sendNotFound(response, err, host, request.url);
+                });
+              } else {
                 Utils.sendNotFound(response, err, host, request.url);
-              });
+              }
             }
 
           } else {
@@ -209,9 +213,13 @@ const NodeStatic = class {
 
               Utils.sendCustom(request, response, 500, this.config.nodeStatic.customPages.error, this.fileServer, this.logger ? this.logger.log.bind(this.logger) : '');
             } else {
-              this.logger.log(request, response, () => {
+              if (this.logger) {
+                this.logger.log(request, response, () => {
+                  Utils.sendError(response, err, request.url);
+                });
+              } else {
                 Utils.sendError(response, err, request.url);
-              });
+              }
             }
           }
 
@@ -228,7 +236,7 @@ const NodeStatic = class {
       // handle serving and logging
       request.addListener('end', () => {
 
-        this.fileServer.serve(request, response, (err/*, result*/) => {
+        this.fileServer.serve(request, response, (err /*, result*/ ) => {
 
           if (this.logger) {
             this.logger.log(request, response, () => {
