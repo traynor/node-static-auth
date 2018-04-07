@@ -47,10 +47,10 @@ There are 4 main settings areas/properties in config object you must set up:
 ```js
 const config = {
 	nodeStatic: {
-		// set static server options (root, index file etc.)
+		// set static server options (root, index file, custom error pages etc.)
 	},
 	server {
-		// set web server options (ports, enable/disable http/2, https, http->https, custom pages etc.)
+		// set web server options (ports, enable/disable http/2, https, http->https etc.)
 	},
 	auth: {
 		// set Basic auth protection (enable/disable etc.)
@@ -60,7 +60,7 @@ const config = {
 	}
 }
 ```
-Read the example below to see options, or go right at it here: [example](example/app.js).
+Read the example below to see options, or go right at it here: [example](example/server/index.js).
 
 - __start the server__
 
@@ -80,10 +80,12 @@ const NodeStaticAuth = require('node-static-auth');
 
 const config = {
     // set static server
-    // you can pass opts you'd usually pass to `node-static`
+    // you can pass opts you'd usually pass to `node-static`:
+    // https://www.npmjs.com/package/node-static
     nodeStatic: {
         // use path relative to project root, i.e. `process.cwd()`
-        root: 'path-to-public-directory',        
+        root: 'path-to-public-directory', 
+        // pass the native opts for node-static here
         options: {
             indexFile: 'your-index.html'
         },
@@ -108,6 +110,8 @@ const config = {
             // enter path to certificate relative to project root
             key: 'path-to-your-privkey',
             cert: 'path-to-your-cert'
+            // NOTE: HTTP2 requires HTTPS, you've got some bogus certs
+            // for localhost in the example, usable for some demo POC
         }
     },
     // set basic auth credentials
@@ -124,14 +128,17 @@ const config = {
         // use path relative to project root, i.e. `process.cwd()`
         filename: 'access.log',
         folder: 'path-to-logs-directory',
-        // setup log rotation: `https://www.npmjs.com/package/rotating-file-stream`
+        // setup log rotation:
+        // `https://www.npmjs.com/package/rotating-file-stream`
+        // logs will be created within given folder
         logRotation: {
             use: false, // set `true` to enable
             // pass the native opts for `rfs` here
             options: {}
         },
-        // pass the native opts for `morgan` https://www.npmjs.com/package/morgan
-        type: 'combined',        
+        // pass the native opts for `morgan`:
+        // https://www.npmjs.com/package/morgan
+        type: 'combined',
         options: {}
     }
 };
@@ -140,7 +147,7 @@ const config = {
 const server = new NodeStaticAuth(config);
 ```
 
-Or inspect it here: [example](example/app.js).
+Or inspect it here: [example](example/server/index.js).
 
 You can configure it based on your needs, like adding log rotation, disabling logger or whatever.
 

@@ -1,6 +1,6 @@
 const NodeStaticAuth = require('../../lib');
 
-console.log('>>example go');
+console.log('>>node-static-auth example go');
 const config = {
     // set static server
     // https://www.npmjs.com/package/node-static: `new static.Server(root, options)`
@@ -12,8 +12,8 @@ const config = {
             indexFile: 'index.html'
         },
         // set your custom pages here to be served on 401, 404 and 500
-        // relative to `root` property
-        // NOTE: you cannot use them with HTTP2, it will
+        // relative to `nodeStatic.root` property, i.e. your public folder
+        // NOTE: you cannot use them with HTTP2 for now, it will
         // fallback to default pages (less pretty)
         customPages: {
             forbidden: 'forbidden.html',
@@ -30,7 +30,6 @@ const config = {
             enabled: true, // set `false` to disable
             httpListener: 3000, // set HTTP listener for HTTP->HTTPS redirect
             // enter path to certificate relative to project root
-            // note that if reading certificate fails it will fallback to http server
             /**
              * these are some bogus certificates for testing
              * create self-signed localhost testing certificate that expires in 10 years:
@@ -50,18 +49,20 @@ const config = {
     // set logger file options
     logger: {
         use: true, // set `false` to disable
-        // directory will be created if it doesn't exist
+        // NOTE: directory will be created if it doesn't exist
         // use path relative to project root, i.e. `process.cwd()`
         filename: 'access.log',
         folder: 'example/server/logs', // here is path relative to this project
-        // setup log rotation: `https://www.npmjs.com/package/rotating-file-stream`
+        // setup log rotation:
+        // `https://www.npmjs.com/package/rotating-file-stream`
         // logs will be created within given folder
         logRotation: {
-            use: false,
+            use: false, // set `true` to enable
             // pass the native opts for `rfs` here
             options: {}
         },
-        // pass the native opts for `morgan` https://www.npmjs.com/package/morgan
+        // pass the native opts for `morgan`:
+        // https://www.npmjs.com/package/morgan
         type: 'combined',
         options: {}
     }
